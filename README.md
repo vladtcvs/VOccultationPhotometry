@@ -13,4 +13,20 @@ We need to analyze tracks of stars during aseroid star occultation to obtain occ
 5. Use camera sensor calibration, mount movement calibration, background calibration restore track
 6. Deconvolve track with star image (PSF)
 7. Obtain occultation curve
-   
+
+# Build
+
+## pip install
+Run
+```
+python3 -m pip install .
+```
+
+## build executable single-file
+
+After pip install, run
+```
+pyinstaller --onefile --name voccultation src/voccultation/main.py
+```
+
+Binary located in `dist/` path.
