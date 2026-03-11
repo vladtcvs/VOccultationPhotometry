@@ -2,8 +2,8 @@ import drift_profile
 import drift_slice
 import drift_detect
 
-from drift_detect import TrackRect
-from data_containers import DriftProfile, DriftTrack
+from voccultation.drift_detect import TrackRect
+from voccultation.data_containers import DriftProfile, DriftTrack
 
 import abc
 from typing import List, Tuple

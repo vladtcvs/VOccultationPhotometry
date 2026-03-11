@@ -1,4 +1,4 @@
-from data_context import DriftContext, IObserver
+from voccultation.data_context import DriftContext, IObserver
 
 import wx
 import wx.lib.scrolledpanel as scrolled
