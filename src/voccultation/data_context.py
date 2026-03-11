@@ -1,6 +1,6 @@
-import drift_profile
-import drift_slice
-import drift_detect
+import voccultation.drift_profile as drift_profile
+import voccultation.drift_slice as drift_slice
+import voccultation.drift_detect as drift_detect
 
 from voccultation.drift_detect import TrackRect
 from voccultation.data_containers import DriftProfile, DriftTrack
