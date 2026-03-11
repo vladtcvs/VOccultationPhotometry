@@ -457,10 +457,14 @@ class DriftWindow(wx.Frame):
     def OnClose(self, event):
         self.Destroy()
 
-context = DriftContext()
+def main():
+    context = DriftContext()
 
-app = wx.App(redirect=False)
-top = DriftWindow(title="Drift analyzer", context=context)
-top.Show()
-app.MainLoop()
-sys.exit()
+    app = wx.App(redirect=False)
+    top = DriftWindow(title="VOccultationPhotometry", context=context)
+    top.Show()
+    app.MainLoop()
+    sys.exit()
+
+if __name__ == "__main__":
+    main()

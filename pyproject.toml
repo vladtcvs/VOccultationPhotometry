@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "voccultation"
+version = "0.1"
+requires-python = ">=3.10"
+authors = [{name="Vladislav Tsendrovskii", email="vtcendrovskii@gmail.com"}]
+description = 'Asteroid occultation processing'
+readme = "README.md"
+license = "GPL-3.0"
+license-files = ["LICENSE.txt"]
+dependencies = [
+    'numpy',
+    'wxpython',
+    'opencv-python',
+    'pillow',
+    'matplotlib',
+    'imutils',
+    'scikit-image'
+]
+
+[project.scripts]
+voccultation = "voccultation.main:main"
+
