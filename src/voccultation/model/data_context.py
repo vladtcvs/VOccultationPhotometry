@@ -1,9 +1,23 @@
-import voccultation.drift_profile as drift_profile
-import voccultation.drift_slice as drift_slice
-import voccultation.drift_detect as drift_detect
+#
+# Copyright (c) 2026 Vladislav Tsendrovskii
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, version 3 of the License.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+# See the GNU General Public License for more details.
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <https://www.gnu.org/licenses/>.
+#
 
-from voccultation.drift_detect import TrackRect
-from voccultation.data_containers import DriftProfile, DriftTrack
+import voccultation.model.drift_profile as drift_profile
+import voccultation.model.drift_slice as drift_slice
+import voccultation.model.drift_detect as drift_detect
+
+from voccultation.model.drift_detect import TrackRect
+from voccultation.model.data_containers import DriftProfile, DriftTrack
 
 import abc
 from typing import List, Tuple

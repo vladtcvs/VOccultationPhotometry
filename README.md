@@ -30,3 +30,7 @@ pyinstaller --onefile --name voccultation src/voccultation/main.py
 ```
 
 Binary located in `dist/` path.
+
+# License
+
+[GNU GPL v3](LICENSE.txt)
