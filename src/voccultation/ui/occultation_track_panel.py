@@ -15,10 +15,10 @@ class OccultationTrackPanel(wx.Panel):
 
         image_panel = scrolled.ScrolledPanel(self)
         image_panel.SetupScrolling()
-        
+
         self.empty_img = wx.Image(240, 480)
         self.imageCtrl = wx.StaticBitmap(image_panel, wx.ID_ANY, wx.Bitmap(self.empty_img))
-        
+
         main_sizer.Add(image_panel)
 
         plot_panel = wx.Panel(self)
