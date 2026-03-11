@@ -27,24 +27,33 @@ class OccultationTrackPanel(wx.Panel):
         main_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.SetSizer(main_sizer)
 
-        image_panel = scrolled.ScrolledPanel(self)
+        # data panel
+        data_panel = wx.Panel(self)
+        data_sizer = wx.BoxSizer(wx.VERTICAL)
+        data_panel.SetSizer(data_sizer)
+        main_sizer.Add(data_panel)
+
+        # track image panel
+        image_panel = scrolled.ScrolledPanel(data_panel)
         image_panel.SetupScrolling()
 
         self.empty_img = wx.Image(240, 480)
         self.imageCtrl = wx.StaticBitmap(image_panel, wx.ID_ANY, wx.Bitmap(self.empty_img))
 
-        main_sizer.Add(image_panel)
+        data_sizer.Add(image_panel)
 
-        plot_panel = wx.Panel(self)
+        # track plot panel
+        plot_panel = wx.Panel(data_panel)
         plot_sizer = wx.BoxSizer(wx.VERTICAL)
         plot_panel.SetSizer(plot_sizer)
-        main_sizer.Add(plot_panel)
+        data_sizer.Add(plot_panel)
 
         occ_profile_panel = wx.Panel(plot_panel)
         empty_occ_profile_img = wx.Image(640,480)
         self.occ_profile_ctrl = wx.StaticBitmap(occ_profile_panel, wx.ID_ANY, wx.Bitmap(empty_occ_profile_img))
         plot_sizer.Add(occ_profile_panel)
 
+        # controls panel
         ctl_sizer = wx.BoxSizer(wx.VERTICAL)
         ctl_panel = wx.Panel(self)
         ctl_panel.SetSizer(ctl_sizer)
