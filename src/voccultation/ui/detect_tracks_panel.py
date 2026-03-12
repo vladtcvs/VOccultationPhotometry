@@ -33,8 +33,8 @@ class DetectTracksPanel(wx.Panel, IObserver):
         image_box.SetSizer(image_sizer)
         main_sizer.Add(image_box, proportion=1, flag=wx.EXPAND | wx.ALL, border=8)
 
-        self.empty_img = wx.Image(600, 600)
-        self.image_ctrl = wx.StaticBitmap(image_box, wx.ID_ANY, wx.Bitmap(self.empty_img))
+        empty_img = wx.Image(600, 600)
+        self.image_ctrl = wx.StaticBitmap(image_box, wx.ID_ANY, wx.Bitmap(empty_img))
         self.image_ctrl.Bind(wx.EVT_LEFT_DOWN, self.on_bitmap_click)
         image_sizer.Add(self.image_ctrl, proportion=1, flag=wx.EXPAND | wx.ALL, border=4)
 

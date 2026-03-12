@@ -36,6 +36,10 @@ class ReferenceTrackPanel(wx.Panel, IObserver):
         self.ref_track_ctrl = wx.StaticBitmap(track_box, wx.ID_ANY, wx.Bitmap(track_img))
         track_sizer.Add(self.ref_track_ctrl, proportion=1, flag=wx.EXPAND | wx.ALL, border=4)
 
+        linear_track_img = wx.Image(480, 40)
+        self.linear_ref_track_image_ctrl = wx.StaticBitmap(track_box, wx.ID_ANY, wx.Bitmap(linear_track_img))
+        track_sizer.Add(self.linear_ref_track_image_ctrl, proportion=1, flag=wx.EXPAND | wx.ALL, border=4)
+
         # track plot panel
         plot_box = wx.StaticBox(self, wx.ID_ANY, label='Plot')
         plot_sizer = wx.BoxSizer(wx.VERTICAL)

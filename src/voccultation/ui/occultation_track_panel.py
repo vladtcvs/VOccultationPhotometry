@@ -37,7 +37,6 @@ class OccultationTrackPanel(wx.Panel):
         self.track_image_ctrl = wx.StaticBitmap(track_box, wx.ID_ANY, wx.Bitmap(track_img))
         track_sizer.Add(self.track_image_ctrl, proportion=1, flag=wx.EXPAND | wx.ALL, border=4)
 
-        # linear track image panel
         linear_track_img = wx.Image(480, 40)
         self.linear_track_image_ctrl = wx.StaticBitmap(track_box, wx.ID_ANY, wx.Bitmap(linear_track_img))
         track_sizer.Add(self.linear_track_image_ctrl, proportion=1, flag=wx.EXPAND | wx.ALL, border=4)
