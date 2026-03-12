@@ -23,7 +23,7 @@ def main():
     context = DriftContext()
 
     app = wx.App(redirect=False)
-    top = DriftWindow(title="VOccultationPhotometry", context=context)
+    top = DriftWindow(title="VOccultation", context=context)
     top.Show()
     app.MainLoop()
     sys.exit()
