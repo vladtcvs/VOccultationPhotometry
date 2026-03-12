@@ -27,31 +27,30 @@ class OccultationTrackPanel(wx.Panel):
         main_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.SetSizer(main_sizer)
 
-        # data panel
-        data_panel = wx.Panel(self)
-        data_sizer = wx.BoxSizer(wx.VERTICAL)
-        data_panel.SetSizer(data_sizer)
-        main_sizer.Add(data_panel)
-
         # track image panel
-        image_panel = scrolled.ScrolledPanel(data_panel)
-        image_panel.SetupScrolling()
+        track_box = wx.StaticBox(self, wx.ID_ANY, label='Track')
+        track_sizer = wx.BoxSizer(wx.VERTICAL)
+        track_box.SetSizer(track_sizer)
+        main_sizer.Add(track_box, proportion=1, flag=wx.EXPAND | wx.ALL, border=8)
 
-        self.empty_img = wx.Image(240, 480)
-        self.imageCtrl = wx.StaticBitmap(image_panel, wx.ID_ANY, wx.Bitmap(self.empty_img))
+        track_img = wx.Image(240, 480)
+        self.track_image_ctrl = wx.StaticBitmap(track_box, wx.ID_ANY, wx.Bitmap(track_img))
+        track_sizer.Add(self.track_image_ctrl, proportion=1, flag=wx.EXPAND | wx.ALL, border=4)
 
-        data_sizer.Add(image_panel)
+        # linear track image panel
+        linear_track_img = wx.Image(480, 40)
+        self.linear_track_image_ctrl = wx.StaticBitmap(track_box, wx.ID_ANY, wx.Bitmap(linear_track_img))
+        track_sizer.Add(self.linear_track_image_ctrl, proportion=1, flag=wx.EXPAND | wx.ALL, border=4)
 
         # track plot panel
-        plot_panel = wx.Panel(data_panel)
+        plot_box = wx.StaticBox(self, wx.ID_ANY, label='Plot')
         plot_sizer = wx.BoxSizer(wx.VERTICAL)
-        plot_panel.SetSizer(plot_sizer)
-        data_sizer.Add(plot_panel)
+        plot_box.SetSizer(plot_sizer)        
+        main_sizer.Add(plot_box, proportion=1, flag=wx.EXPAND | wx.ALL, border=8)
 
-        occ_profile_panel = wx.Panel(plot_panel)
         empty_occ_profile_img = wx.Image(640,480)
-        self.occ_profile_ctrl = wx.StaticBitmap(occ_profile_panel, wx.ID_ANY, wx.Bitmap(empty_occ_profile_img))
-        plot_sizer.Add(occ_profile_panel)
+        self.occ_profile_ctrl = wx.StaticBitmap(plot_box, wx.ID_ANY, wx.Bitmap(empty_occ_profile_img))
+        plot_sizer.Add(self.occ_profile_ctrl, proportion=1, flag=wx.EXPAND | wx.ALL, border=4)
 
         # controls panel
         ctl_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -80,7 +79,7 @@ class OccultationTrackPanel(wx.Panel):
         navigator.add_observer(self)
         ctl_sizer.Add(navigator, proportion=0, flag=wx.EXPAND | wx.ALL, border=10)
 
-        main_sizer.Add(ctl_panel)
+        main_sizer.Add(ctl_panel, proportion=0, flag=wx.ALL | wx.ALIGN_CENTER_VERTICAL, border=8)
 
     def PlotWithoutSky(self, event : wx.CommandEvent):
         self.context.build_true_occ_profile = event.IsChecked()
@@ -111,8 +110,8 @@ class OccultationTrackPanel(wx.Panel):
             image = wx.Image(width, height)
             image.SetData(data)
             gray_bitmap = image.ConvertToBitmap()
-            self.imageCtrl.SetBitmap(gray_bitmap)
-            self.imageCtrl.Refresh()
+            self.track_image_ctrl.SetBitmap(gray_bitmap)
+            self.track_image_ctrl.Refresh()
 
         if self.context.occ_profile_rgb is not None:
             height, width = self.context.occ_profile_rgb.shape[:2]

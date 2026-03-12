@@ -26,24 +26,27 @@ class ReferenceTrackPanel(wx.Panel, IObserver):
         main_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.SetSizer(main_sizer)
 
-        image_panel = scrolled.ScrolledPanel(self)
-        image_panel.SetupScrolling()
+        # track image panel
+        track_box = wx.StaticBox(self, wx.ID_ANY, label='Track')
+        track_sizer = wx.BoxSizer(wx.VERTICAL)
+        track_box.SetSizer(track_sizer)
+        main_sizer.Add(track_box, proportion=1, flag=wx.EXPAND | wx.ALL, border=8)
 
-        self.empty_img = wx.Image(240, 480)
-        self.ref_track_ctrl = wx.StaticBitmap(image_panel, wx.ID_ANY, wx.Bitmap(self.empty_img))
+        track_img = wx.Image(240, 480)
+        self.ref_track_ctrl = wx.StaticBitmap(track_box, wx.ID_ANY, wx.Bitmap(track_img))
+        track_sizer.Add(self.ref_track_ctrl, proportion=1, flag=wx.EXPAND | wx.ALL, border=4)
 
-        main_sizer.Add(image_panel)
-
-        plot_panel = wx.Panel(self)
+        # track plot panel
+        plot_box = wx.StaticBox(self, wx.ID_ANY, label='Plot')
         plot_sizer = wx.BoxSizer(wx.VERTICAL)
-        plot_panel.SetSizer(plot_sizer)
-        main_sizer.Add(plot_panel)
+        plot_box.SetSizer(plot_sizer)        
+        main_sizer.Add(plot_box, proportion=1, flag=wx.EXPAND | wx.ALL, border=8)
 
-        ref_profile_panel = wx.Panel(plot_panel)
-        empty_ref_profile_img = wx.Image(640,480)
-        self.ref_profile_ctrl = wx.StaticBitmap(ref_profile_panel, wx.ID_ANY, wx.Bitmap(empty_ref_profile_img))
-        plot_sizer.Add(ref_profile_panel)
+        empty_occ_profile_img = wx.Image(640,480)
+        self.ref_profile_ctrl = wx.StaticBitmap(plot_box, wx.ID_ANY, wx.Bitmap(empty_occ_profile_img))
+        plot_sizer.Add(self.ref_profile_ctrl, proportion=1, flag=wx.EXPAND | wx.ALL, border=4)
 
+        # controls panel
         ctl_sizer = wx.BoxSizer(wx.VERTICAL)
         ctl_panel = wx.Panel(self)
         ctl_panel.SetSizer(ctl_sizer)
@@ -61,7 +64,7 @@ class ReferenceTrackPanel(wx.Panel, IObserver):
         save_mean_reference.Bind(wx.EVT_BUTTON, self.SaveReference)
         ctl_sizer.Add(save_mean_reference, proportion=0, flag=wx.EXPAND | wx.ALL, border=10)
 
-        main_sizer.Add(ctl_panel)
+        main_sizer.Add(ctl_panel, proportion=0, flag=wx.ALL | wx.ALIGN_CENTER_VERTICAL, border=8)
 
     def SetRefHalfW(self, event):
         text = event.GetString()
