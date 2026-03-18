@@ -57,12 +57,12 @@ class OccultationTrackPanel(wx.Panel):
         ctl_panel.SetSizer(ctl_sizer)
 
         plot_without_sky = wx.CheckBox(ctl_panel, label="Remove average sky value")
-        plot_without_sky.SetValue(self.context.build_true_occ_profile)
+        plot_without_sky.SetValue(self.context.build_true_occultation_profile)
         plot_without_sky.Bind(wx.EVT_CHECKBOX, self.PlotWithoutSky)
         ctl_sizer.Add(plot_without_sky, proportion=0, flag=wx.EXPAND | wx.ALL, border=10)
 
         self.half_w_input = wx.TextCtrl(ctl_panel)
-        self.half_w_input.SetValue(str(self.context.occ_half_w))
+        self.half_w_input.SetValue(str(self.context.occultation_half_w))
         self.half_w_input.Bind(wx.EVT_TEXT, self.SetOccHalfW)
         ctl_sizer.Add(self.half_w_input, proportion=0, flag=wx.EXPAND | wx.ALL, border=10)
 
@@ -81,40 +81,43 @@ class OccultationTrackPanel(wx.Panel):
         main_sizer.Add(ctl_panel, proportion=0, flag=wx.ALL | wx.ALIGN_CENTER_VERTICAL, border=8)
 
     def PlotWithoutSky(self, event : wx.CommandEvent):
-        self.context.build_true_occ_profile = event.IsChecked()
+        self.context.build_true_occultation_profile = event.IsChecked()
 
     def SetOccHalfW(self, event : wx.CommandEvent):
         text = event.GetString()
         try:
             value = int(text)
-            self.context.set_occ_half_w(value)
+            self.context.set_occultation_half_w(value)
         except Exception as e:
             pass
 
     def navigate(self, dx, dy):
-        x = self.context.occ_track_pos[1]
-        y = self.context.occ_track_pos[0]
-        self.context.specify_occ_track(x + dx, y + dy)
+        x = self.context.occultation_track_pos[1] + dx
+        y = self.context.occultation_track_pos[0] + dy
+        self.context.build_occultation_track(x, y)
+        self.context.occultation_track_pos = (y, x)
 
     def AnalyzeOccultation(self, event):
-        x = self.context.occ_track_pos[1]
-        y = self.context.occ_track_pos[0]
-        self.context.specify_occ_track(x, y)
-        self.context.analyze_occ_track()
+        x = self.context.occultation_track_pos[1]
+        y = self.context.occultation_track_pos[0]
+        self.context.build_occultation_track(x, y)
 
     def UpdateImage(self):
-        if self.context.occ_track_rgb is not None:
-            height, width = self.context.occ_track_rgb.shape[:2]
-            data = self.context.occ_track_rgb.tobytes()
+        if self.context.occultation_image is not None:
+            height, width = self.context.occultation_image.shape[:2]
+            data = self.context.occultation_image.tobytes()
             image = wx.Image(width, height)
             image.SetData(data)
             gray_bitmap = image.ConvertToBitmap()
             self.track_image_ctrl.SetBitmap(gray_bitmap)
             self.track_image_ctrl.Refresh()
 
-        if self.context.occ_profile_rgb is not None:
-            height, width = self.context.occ_profile_rgb.shape[:2]
-            data = self.context.occ_profile_rgb.tobytes()
+        #if self.context.occ_linear_track_rgb is not None:
+        #    pass
+
+        if self.context.occultation_plot is not None:
+            height, width = self.context.occultation_plot.shape[:2]
+            data = self.context.occultation_plot.tobytes()
             image = wx.Image(width, height)
             image.SetData(data)
             gray_bitmap = image.ConvertToBitmap()
@@ -138,12 +141,12 @@ class OccultationTrackPanel(wx.Panel):
             with open(pathname, "w", encoding='utf8') as f:
                 writer = csv.writer(f)
                 writer.writerow(['id', 'value', 'error'])
-                ids = range(self.context.occ_profile.profile.shape[0])
-                values = self.context.occ_profile.profile
-                errors = self.context.occ_profile.error
+                ids = range(self.context.occultation_profile.profile.shape[0])
+                values = self.context.occultation_profile.profile
+                errors = self.context.occultation_profile.error
                 for index, value, error in zip(ids, values, errors):
                     writer.writerow([index, value, error])
 
     def notify(self):
         self.UpdateImage()
-        self.half_w_input.ChangeValue(str(self.context.occ_half_w))
+        self.half_w_input.ChangeValue(str(self.context.occultation_half_w))

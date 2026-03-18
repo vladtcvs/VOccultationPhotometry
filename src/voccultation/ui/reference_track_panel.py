@@ -56,7 +56,7 @@ class ReferenceTrackPanel(wx.Panel, IObserver):
         ctl_panel.SetSizer(ctl_sizer)
 
         self.half_w_input = wx.TextCtrl(ctl_panel)
-        self.half_w_input.SetValue(str(self.context.ref_half_w))
+        self.half_w_input.SetValue(str(self.context.reference_half_w))
         self.half_w_input.Bind(wx.EVT_TEXT, self.SetRefHalfW)
         ctl_sizer.Add(self.half_w_input, proportion=0, flag=wx.EXPAND | wx.ALL, border=10)
 
@@ -74,7 +74,7 @@ class ReferenceTrackPanel(wx.Panel, IObserver):
         text = event.GetString()
         try:
             value = int(text)
-            self.context.set_ref_half_w(value)
+            self.context.set_reference_half_w(value)
         except Exception as e:
             pass
 
@@ -90,28 +90,28 @@ class ReferenceTrackPanel(wx.Panel, IObserver):
             with open(pathname, "w", encoding='utf8') as f:
                 writer = csv.writer(f)
                 writer.writerow(['id', 'value', 'error'])
-                ids = range(self.context.mean_ref_profile.profile.shape[0])
-                values = self.context.mean_ref_profile.profile
-                errors = self.context.mean_ref_profile.error
+                ids = range(self.context.mean_reference_profile.profile.shape[0])
+                values = self.context.mean_reference_profile.profile
+                errors = self.context.mean_reference_profile.error
                 for index, value, error in zip(ids, values, errors):
                     writer.writerow([index, value, error])
 
     def BuildMeanReference(self, event):
-        self.context.analyze_reference_track()
+        self.context.build_mean_reference_track()
 
     def UpdateImage(self):
-        if self.context.mean_ref_track_rgb is not None:
-            height, width = self.context.mean_ref_track_rgb.shape[:2]
-            data = self.context.mean_ref_track_rgb.tobytes()
+        if self.context.mean_reference_image is not None:
+            height, width = self.context.mean_reference_image.shape[:2]
+            data = self.context.mean_reference_image.tobytes()
             image = wx.Image(width, height)
             image.SetData(data)
             gray_bitmap = image.ConvertToBitmap()
             self.ref_track_ctrl.SetBitmap(gray_bitmap)
             self.ref_track_ctrl.Refresh()
 
-        if self.context.mean_ref_profile_rgb is not None:
-            height, width = self.context.mean_ref_profile_rgb.shape[:2]
-            data = self.context.mean_ref_profile_rgb.tobytes()
+        if self.context.mean_reference_plot is not None:
+            height, width = self.context.mean_reference_plot.shape[:2]
+            data = self.context.mean_reference_plot.tobytes()
             image = wx.Image(width, height)
             image.SetData(data)
             gray_bitmap = image.ConvertToBitmap()
@@ -123,4 +123,4 @@ class ReferenceTrackPanel(wx.Panel, IObserver):
 
     def notify(self):
         self.UpdateImage()
-        self.half_w_input.ChangeValue(str(self.context.ref_half_w))
+        self.half_w_input.ChangeValue(str(self.context.reference_half_w))

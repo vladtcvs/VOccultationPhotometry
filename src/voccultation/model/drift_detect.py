@@ -20,66 +20,13 @@ import imutils.contours
 import statistics
 
 from skimage import measure
-
-class TrackRect:
-    def __init__(self, left, right, top, bottom):
-        self.left = left
-        self.right = right
-        self.top = top
-        self.bottom = bottom
-        self.w = self.right - self.left + 1
-        self.h = self.bottom - self.top + 1
-
-    def point_inside_rect(self, x : int, y : int) -> bool:
-        return x >= self.left and x <= self.right and y >= self.top and y <= self.bottom
-
-    def detect_overlap(self, other) -> bool:
-        if self.point_inside_rect(other.left, other.top):
-            return True
-        if self.point_inside_rect(other.right, other.top):
-            return True
-        if self.point_inside_rect(other.left, other.bottom):
-            return True
-        if self.point_inside_rect(other.right, other.bottom):
-            return True
-        return False
-
-    def extract_track(self, gray : np.ndarray, margin : int) -> Tuple[np.ndarray, np.ndarray]:
-        x0 = self.left-margin
-        y0 = self.top-margin
-        x1 = self.right+margin+1
-        y1 = self.bottom+margin+1
-
-        tw = x1 - x0
-        th = y1 - y0
-        
-        x0_c = max(x0, 0)
-        y0_c = max(y0, 0)
-        x1_c = min(x1, gray.shape[1])
-        y1_c = min(y1, gray.shape[0])
-
-        dy = y0_c - y0
-        dx = x0_c - x0
-        cw = x1_c - x0_c
-        ch = y1_c - y0_c
-
-        result = np.empty((th, tw))
-        result.fill(np.nan)
-        track = gray[y0_c:y1_c, x0_c:x1_c]
-        result[dy:dy+ch, dx:dx+cw] = track
-
-        mask = np.ones(result.shape)
-        idxs = np.where(np.isnan(result))
-        mask[idxs] = 0
-        result[idxs] = 0
-
-        return result, mask
+from voccultation.model.data_containers import DriftTrackRect
 
 def detect_bold_tracks(gray : np.ndarray, 
                        num_tracks : int = 4,
                        smooth_size : int = 11,
                        blur_size : int = 35,
-                       threshold_k : float = 1.1) -> List[TrackRect]:
+                       threshold_k : float = 1.1) -> List[DriftTrackRect]:
     if blur_size % 2 == 0:
         blur_size += 1
     if smooth_size % 2 == 0:
@@ -140,11 +87,11 @@ def detect_bold_tracks(gray : np.ndarray,
             right = max(right, x)
             top = min(top, y)
             bottom = max(bottom, y)
-        tracks.append(TrackRect(left, right, top, bottom))
+        tracks.append(DriftTrackRect(left, right, top, bottom))
 
     return tracks
 
-def clear_overlapped(tracks : List[TrackRect]) -> List[TrackRect]:
+def clear_overlapped(tracks : List[DriftTrackRect]) -> List[DriftTrackRect]:
     not_overlapped = []
     for ind1, track1 in enumerate(tracks):
         for ind2, track2 in enumerate(tracks):
@@ -156,7 +103,7 @@ def clear_overlapped(tracks : List[TrackRect]) -> List[TrackRect]:
             not_overlapped.append(track1)
     return not_overlapped
 
-def clear_bad_size(tracks : List[TrackRect], kappa : float = 1) -> List[TrackRect]:
+def clear_bad_size(tracks : List[DriftTrackRect], kappa : float = 1) -> List[DriftTrackRect]:
     widths = []
     heights = []
     for track in tracks:
@@ -176,7 +123,7 @@ def clear_bad_size(tracks : List[TrackRect], kappa : float = 1) -> List[TrackRec
             goods.append(track)
     return goods
 
-def correlate_tracks(tracks : List[TrackRect]) -> List[TrackRect]:
+def correlate_tracks(tracks : List[DriftTrackRect]) -> List[DriftTrackRect]:
     maxw = 0
     maxh = 0
     for track in tracks:
@@ -193,11 +140,11 @@ def correlate_tracks(tracks : List[TrackRect]) -> List[TrackRect]:
         right = left + maxw - 1
         top = track.top + dy
         bottom = top + maxh - 1
-        aligned = TrackRect(left, right, top, bottom)
+        aligned = DriftTrackRect(left, right, top, bottom)
         results.append(aligned)
     return results
 
-def mean_track(tracks : List[TrackRect], image : np.ndarray) -> np.ndarray:
+def mean_track(tracks : List[DriftTrackRect], image : np.ndarray) -> np.ndarray:
     w = tracks[0].w
     h = tracks[0].h
     sum_track = np.zeros((h,w))
@@ -211,7 +158,7 @@ def mean_track(tracks : List[TrackRect], image : np.ndarray) -> np.ndarray:
     sum_track[np.where(sum_weight == 0)] = 0
     return sum_track
 
-def track_to_points(track : np.ndarray) -> list:
+def track_to_points(track : np.ndarray) -> Tuple[np.ndarray, bool]:
     w = track.shape[1]
     h = track.shape[0]
     transposed = False
@@ -233,7 +180,7 @@ def track_to_points(track : np.ndarray) -> list:
             points.append((y,maximum))
     return np.array(points), transposed
 
-def smooth_track_points(points, transposed):
+def smooth_track_points(points : np.ndarray, transposed : bool) -> np.ndarray:
     hw = 2
     L = points.shape[0]
     if not transposed:
@@ -254,7 +201,7 @@ def smooth_track_points(points, transposed):
         average[x, 1-index] = points[x, 1-index]
     return average
 
-def detect_reference_tracks(gray : np.ndarray, count : int = 10, kappas : list | None = None) -> List[TrackRect]:
+def detect_reference_tracks(gray : np.ndarray, count : int = 10, kappas : list | None = None) -> List[DriftTrackRect]:
     tracks = detect_bold_tracks(gray, count)
     tracks = clear_overlapped(tracks)
     if kappas is None:
@@ -264,7 +211,7 @@ def detect_reference_tracks(gray : np.ndarray, count : int = 10, kappas : list |
     tracks = correlate_tracks(tracks)
     return tracks
 
-def build_mean_reference_track(gray : np.ndarray, references : List[TrackRect]) -> Tuple[np.ndarray, np.ndarray, bool]:
+def build_mean_reference_track(gray : np.ndarray, references : List[DriftTrackRect]) -> Tuple[np.ndarray, np.ndarray, bool]:
     track = mean_track(references, gray)
     points, transposed = track_to_points(track)
     points = smooth_track_points(points, transposed)

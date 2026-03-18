@@ -12,77 +12,93 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 #
 
+from typing import Tuple
 import numpy as np
-import matplotlib.pyplot as plt
-from io import BytesIO
 import cv2
 
-import voccultation.model.drift_profile as drift_profile
+from voccultation.model.plot import plot_to_numpy
 
-import matplotlib
-matplotlib.use("Agg")
+class DriftTrackRect:
+    def __init__(self, left, right, top, bottom):
+        self.left = left
+        self.right = right
+        self.top = top
+        self.bottom = bottom
+        self.w = self.right - self.left + 1
+        self.h = self.bottom - self.top + 1
 
-def plot_to_numpy(xrange, datas, width=800, height=600, dpi=100):
-    """
-    Convert numerical data plot to numpy array
+    def point_inside_rect(self, x : int, y : int) -> bool:
+        return x >= self.left and x <= self.right and y >= self.top and y <= self.bottom
 
-    Parameters:
-    data: numpy array or list of numerical values
-    width: plot width in pixels
-    height: plot height in pixels
-    dpi: dots per inch
-    
-    Returns:
-    numpy array of shape (height, width, 4) containing RGBA values
-    """
-    # Create figure
-    fig = plt.figure(figsize=(width/dpi, height/dpi), dpi=dpi)
-    
-    # Plot the data
-    args = []
-    for data in datas:
-        args.append(xrange)
-        args.append(data)
-    plt.plot(*args, linewidth=2)
-    plt.grid(True)
+    def detect_overlap(self, other) -> bool:
+        other_ : DriftTrackRect = other
+        if self.point_inside_rect(other_.left, other_.top):
+            return True
+        if self.point_inside_rect(other_.right, other_.top):
+            return True
+        if self.point_inside_rect(other_.left, other_.bottom):
+            return True
+        if self.point_inside_rect(other_.right, other_.bottom):
+            return True
+        return False
 
-    # Save plot to bytes buffer
-    buf = BytesIO()
-    plt.savefig(buf, format='rgba', dpi=dpi)
-    buf.seek(0)
-    
-    # Convert buffer to numpy array
-    img_array = np.frombuffer(buf.getvalue(), dtype=np.uint8)
-    img_array = img_array.reshape(height, width, 4)
-    img_array = img_array[:,:,0:3]
-    
-    # Clean up
-    plt.close(fig)
-    buf.close()
-    
-    return img_array
+    def extract_track(self, gray : np.ndarray, margin : int) -> Tuple[np.ndarray, np.ndarray]:
+        x0 = self.left-margin
+        y0 = self.top-margin
+        x1 = self.right+margin+1
+        y1 = self.bottom+margin+1
+
+        tw = x1 - x0
+        th = y1 - y0
+        
+        x0_c = max(x0, 0)
+        y0_c = max(y0, 0)
+        x1_c = min(x1, gray.shape[1])
+        y1_c = min(y1, gray.shape[0])
+
+        dy = y0_c - y0
+        dx = x0_c - x0
+        cw = x1_c - x0_c
+        ch = y1_c - y0_c
+
+        result = np.empty((th, tw))
+        result.fill(np.nan)
+        track = gray[y0_c:y1_c, x0_c:x1_c]
+        result[dy:dy+ch, dx:dx+cw] = track
+
+        mask = np.ones(result.shape)
+        idxs = np.where(np.isnan(result))
+        mask[idxs] = 0
+        result[idxs] = 0
+
+        return result, mask
+
 
 class DriftTrack:
-    half_w : int = 0
-    slices : np.ndarray = None
+    def __init__(self,
+                 gray : np.ndarray,
+                 margin : int,
+                 points : np.ndarray,
+                 normals : np.ndarray,
+                 half_w : float):
+        self.gray = gray                # part of image
+        self.margin = margin            # margin
+        self.points = points            # points [(y, x)]
+        self.normals = normals          # normals [(ny, nx)]
+        self.half_w = half_w            # 1/2 width of track
 
-    def __init__(self, gray : np.ndarray, margin : int = 0, points : np.ndarray = None, normals : np.ndarray = None, transposed : bool = False):
-        self.gray = gray
-        self.points = points
-        self.transposed = transposed
-        self.normals = normals
-        self.margin = margin
-
-    def draw(self, color, transparency):
+    def draw(self, color : tuple, transparency : float) -> np.ndarray:
         rgb = cv2.cvtColor(self.gray.astype(np.uint8), cv2.COLOR_GRAY2RGB)
         return self.draw_in_place(rgb, 0, 0, color, transparency)
 
-    def draw_in_place(self, rgb, left, top, color, transparency):
+    def draw_in_place(self, rgb : np.ndarray, left : int, top : int, color : tuple, transparency : float) -> np.ndarray:
         color = np.array(color)
+
+        # draw points
         if self.points is not None:
             for y, x in self.points:
-                xx = int(x+self.margin+left)
-                yy = int(y+self.margin+top)
+                xx = int(x + left + self.margin)
+                yy = int(y + top + self.margin)
                 if xx < 0 or yy < 0 or xx >= rgb.shape[1] or yy >= rgb.shape[0]:
                     continue
                 rgb[yy, xx] = rgb[yy, xx] * transparency + color * (1-transparency)
@@ -100,16 +116,22 @@ class DriftTrack:
                 cv2.line(rgb, (x1+left,y1+top), (x2+left,y2+top), (0,200,0), 1)
         return rgb
 
-    def plot_slice(self, w : int, h : int, layer : int = -1):
-        xr = range(2*self.half_w+1)
-        if layer == -1:
-            values = np.mean(self.slices, axis=0)
-            top = np.amax(self.slices, axis=0)
-            low = np.amin(self.slices, axis=0)
-            rgb = plot_to_numpy(xr, [values, top, low], w, h)
-        else:
-            values = self.slices[layer]
-            rgb = plot_to_numpy(xr, [values], w, h)
+class DriftSlice:
+    def __init__(self, slices : np.ndarray):
+        self.slices = slices
+
+    def plot_slice(self, w : int, h : int, layer : int) -> np.ndarray:
+        xr = range(self.slices.shape[0])
+        values = self.slices[layer]
+        rgb = plot_to_numpy(xr, [values], w, h)
+        return rgb
+
+    def plot_slices(self, w : int, h : int) -> np.ndarray:
+        xr = range(self.slices.shape[0])
+        values = np.mean(self.slices, axis=0)
+        top = np.amax(self.slices, axis=0)
+        low = np.amin(self.slices, axis=0)
+        rgb = plot_to_numpy(xr, [values, top, low], w, h)
         return rgb
 
 class DriftProfile:
@@ -117,13 +139,14 @@ class DriftProfile:
         self.profile = profile
         self.error = error
 
-    def plot_profile(self, w : int, h : int, smooth_err : int = 0):
+    def plot_profile(self, w : int, h : int):
         L = self.profile.shape[0]
         xr = range(L)
-        if smooth_err == 0:
-            rgb = plot_to_numpy(xr, [self.profile, self.profile + self.error, self.profile - self.error], w, h)
-        else:
-            top = drift_profile.smooth_track_profile(self.profile + self.error, smooth_err)
-            bottom = drift_profile.smooth_track_profile(self.profile - self.error, smooth_err)
-            rgb = plot_to_numpy(xr, [self.profile, top, bottom], w, h)
+        rgb = plot_to_numpy(xr, [self.profile], w, h)
+        return rgb
+
+    def plot_profile_with_error(self, w : int, h : int):
+        L = self.profile.shape[0]
+        xr = range(L)
+        rgb = plot_to_numpy(xr, [self.profile, self.profile + self.error, self.profile - self.error], w, h)
         return rgb

@@ -59,23 +59,28 @@ class DetectTracksPanel(wx.Panel, IObserver):
 
     def on_bitmap_click(self, event):
         x, y = event.GetPosition()
-        self.context.specify_occ_track(x, y)
+        self.context.build_occultation_track(x, y)
+        self.context.occultation_track_pos = (y,x)
 
     def navigate(self, dx, dy):
-        x = self.context.occ_track_pos[1]
-        y = self.context.occ_track_pos[0]
-        self.context.specify_occ_track(x + dx, y + dy)
-
+        x = self.context.occultation_track_pos[1] + dx
+        y = self.context.occultation_track_pos[0] + dy
+        self.context.build_occultation_track(x, y)
+        self.context.occultation_track_pos = (y, x)
 
     def AutoDetectTracks(self, event):
         self.context.detect_tracks()
-        self.context.build_reference_track()
+        self.context.build_mean_reference_track()
 
         w = self.context.gray.shape[1]
         h = self.context.gray.shape[0]
-        rw = self.context.mean_ref_track.gray.shape[1]
-        rh = self.context.mean_ref_track.gray.shape[0]
-        self.context.specify_occ_track(int(w/2-rw/2), int(h/2-rh/2))
+        rw = self.context.mean_reference_track.gray.shape[1]
+        rh = self.context.mean_reference_track.gray.shape[0]
+        y = int(h/2-rh/2)
+        x = int(w/2-rw/2)
+        self.context.build_occultation_track(x, y)
+        self.context.occultation_track_pos = (y, x)
+
 
     def SpecifyOccultationTrack(self, event):
         #self.context.specify_occ_track()

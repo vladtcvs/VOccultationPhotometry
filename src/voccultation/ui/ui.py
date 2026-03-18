@@ -45,13 +45,13 @@ class DriftWindow(wx.Frame):
 
         panel = wx.Panel(self)
         notebook = wx.Notebook(panel)
-        
+
         self.detectTracksPanel = DetectTracksPanel(notebook, self.context)
         notebook.AddPage(self.detectTracksPanel, "Detect tracks")
-        
+
         self.referenceTrackPanel = ReferenceTrackPanel(notebook, self.context)
         notebook.AddPage(self.referenceTrackPanel, "Reference track")
-        
+
         self.occultationTrackPanel = OccultationTrackPanel(notebook, self.context)
         notebook.AddPage(self.occultationTrackPanel, "Occultation track")
 
@@ -71,8 +71,10 @@ class DriftWindow(wx.Frame):
         wx.adv.AboutBox(aboutInfo)
 
     def OnOpenImage(self, event):
-        with wx.FileDialog(self, "Open track file", wildcard="Image (*.png;*.jpg)|*.png;*.jpg",
-                       style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST) as fileDialog:
+        with wx.FileDialog(self,
+                           "Open track file",
+                           wildcard="Image (*.png;*.jpg)|*.png;*.jpg",
+                           style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST) as fileDialog:
 
             if fileDialog.ShowModal() == wx.ID_CANCEL:
                 return
