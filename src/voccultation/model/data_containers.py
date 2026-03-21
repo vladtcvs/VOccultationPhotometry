@@ -63,8 +63,9 @@ class DriftTrackRect:
 
         result = np.empty((th, tw))
         result.fill(np.nan)
-        track = gray[y0_c:y1_c, x0_c:x1_c]
-        result[dy:dy+ch, dx:dx+cw] = track
+        if cw > 0 and ch > 0:
+            track = gray[y0_c:y1_c, x0_c:x1_c]
+            result[dy:dy+ch, dx:dx+cw] = track
 
         mask = np.ones(result.shape)
         idxs = np.where(np.isnan(result))

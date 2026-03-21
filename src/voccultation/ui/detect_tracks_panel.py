@@ -29,14 +29,22 @@ class DetectTracksPanel(wx.Panel, IObserver):
 
         # Image panel
         image_box = wx.StaticBox(self, wx.ID_ANY, label='Image')
-        image_sizer = wx.BoxSizer(wx.VERTICAL)
-        image_box.SetSizer(image_sizer)
+        image_box_sizer = wx.BoxSizer(wx.VERTICAL)
+        image_box.SetSizer(image_box_sizer)
         main_sizer.Add(image_box, proportion=1, flag=wx.EXPAND | wx.ALL, border=8)
 
+        image_panel = scrolled.ScrolledPanel(image_box)
+        image_panel_sizer = wx.BoxSizer(wx.VERTICAL)
+        image_panel.SetSizer(image_panel_sizer)
+        image_panel.SetupScrolling(True, True)
+
+        image_box_sizer.Add(image_panel, proportion=1, flag=wx.EXPAND | wx.ALL, border=0)
+
         empty_img = wx.Image(600, 600)
-        self.image_ctrl = wx.StaticBitmap(image_box, wx.ID_ANY, wx.Bitmap(empty_img))
+        self.image_ctrl = wx.StaticBitmap(image_panel, wx.ID_ANY, wx.Bitmap(empty_img))
         self.image_ctrl.Bind(wx.EVT_LEFT_DOWN, self.on_bitmap_click)
-        image_sizer.Add(self.image_ctrl, proportion=1, flag=wx.EXPAND | wx.ALL, border=4)
+
+        image_panel_sizer.Add(self.image_ctrl, proportion=1, flag=wx.ALIGN_CENTRE | wx.ALL, border=0)
 
         # Controls
         ctl_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -55,8 +63,8 @@ class DetectTracksPanel(wx.Panel, IObserver):
 
     def on_bitmap_click(self, event):
         x, y = event.GetPosition()
-        self.context.build_occultation_track(x, y)
-        self.context.occultation_track_pos = (y,x)
+        self.context.specify_occultation_track(x, y)
+        self.context.display_tracks()
 
     def navigate(self, dx, dy):
         x, y = self.occultation_track_position()

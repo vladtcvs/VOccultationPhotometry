@@ -61,9 +61,9 @@ class OccultationTrackPanel(wx.Panel):
         plot_without_sky.Bind(wx.EVT_CHECKBOX, self.PlotWithoutSky)
         ctl_sizer.Add(plot_without_sky, proportion=0, flag=wx.EXPAND | wx.ALL, border=10)
 
-        self.half_w_input = wx.TextCtrl(ctl_panel)
+        self.half_w_input = wx.SpinCtrl(ctl_panel, min=1, max=100)
         self.half_w_input.SetValue(str(self.context.occultation_half_w))
-        self.half_w_input.Bind(wx.EVT_TEXT, self.SetOccHalfW)
+        self.half_w_input.Bind(wx.EVT_SPINCTRL, self.SetOccHalfW)
         ctl_sizer.Add(self.half_w_input, proportion=0, flag=wx.EXPAND | wx.ALL, border=10)
 
         build_mean_reference = wx.Button(ctl_panel, label="Analyze occultation track")
@@ -84,10 +84,10 @@ class OccultationTrackPanel(wx.Panel):
         self.context.build_true_occultation_profile = event.IsChecked()
 
     def SetOccHalfW(self, event : wx.CommandEvent):
-        text = event.GetString()
         try:
-            value = int(text)
+            value = self.half_w_input.GetValue()
             self.context.set_occultation_half_w(value)
+            self.context.build_occultation_track()
         except Exception as e:
             pass
 
@@ -154,4 +154,4 @@ class OccultationTrackPanel(wx.Panel):
 
     def notify(self):
         self.UpdateImage()
-        self.half_w_input.ChangeValue(str(self.context.occultation_half_w))
+        self.half_w_input.SetValue(self.context.occultation_half_w)

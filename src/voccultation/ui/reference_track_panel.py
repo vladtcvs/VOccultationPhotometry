@@ -55,9 +55,9 @@ class ReferenceTrackPanel(wx.Panel, IObserver):
         ctl_panel = wx.Panel(self)
         ctl_panel.SetSizer(ctl_sizer)
 
-        self.half_w_input = wx.TextCtrl(ctl_panel)
+        self.half_w_input = wx.SpinCtrl(ctl_panel, min=1, max=100)
         self.half_w_input.SetValue(str(self.context.reference_half_w))
-        self.half_w_input.Bind(wx.EVT_TEXT, self.SetRefHalfW)
+        self.half_w_input.Bind(wx.EVT_SPINCTRL, self.SetRefHalfW)
         ctl_sizer.Add(self.half_w_input, proportion=0, flag=wx.EXPAND | wx.ALL, border=10)
 
         build_mean_reference = wx.Button(ctl_panel, label="Build mean reference track")
@@ -71,10 +71,10 @@ class ReferenceTrackPanel(wx.Panel, IObserver):
         main_sizer.Add(ctl_panel, proportion=0, flag=wx.ALL | wx.ALIGN_CENTER_VERTICAL, border=8)
 
     def SetRefHalfW(self, event):
-        text = event.GetString()
         try:
-            value = int(text)
+            value = self.half_w_input.GetValue()
             self.context.set_reference_half_w(value)
+            self.context.build_mean_reference_track()
         except Exception as e:
             pass
 
@@ -132,4 +132,4 @@ class ReferenceTrackPanel(wx.Panel, IObserver):
 
     def notify(self):
         self.UpdateImage()
-        self.half_w_input.ChangeValue(str(self.context.reference_half_w))
+        self.half_w_input.SetValue(self.context.reference_half_w)
