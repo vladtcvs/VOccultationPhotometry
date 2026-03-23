@@ -70,7 +70,7 @@ class DriftWindow(wx.Frame):
     def OnAbout(self, event):
         aboutInfo = wx.adv.AboutDialogInfo()
         aboutInfo.SetName("VOccultation")
-        aboutInfo.SetVersion("Version: 0.2")
+        aboutInfo.SetVersion("Version: 0.3")
         aboutInfo.SetDescription("Asteroid occultation processing")
         aboutInfo.SetCopyright("Vladislav Tsendrovskii(C) 2026")
         aboutInfo.SetLicense("GNU GPL v3")
