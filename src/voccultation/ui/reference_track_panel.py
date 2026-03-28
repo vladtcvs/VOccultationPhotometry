@@ -70,6 +70,14 @@ class ReferenceTrackPanel(wx.Panel, IObserver):
         self.half_w_profile_input.Bind(wx.EVT_SPINCTRL, self.SetRefHalfW_Profile)
         ctl_sizer.Add(self.half_w_profile_input, proportion=0, flag=wx.EXPAND | wx.ALL, border=10)
 
+        label = wx.StaticText(ctl_panel, label="Track PSF:")
+        ctl_sizer.Add(label, proportion=0, flag=wx.EXPAND | wx.ALL, border=10)
+
+        self.psf_input = wx.SpinCtrlDouble(ctl_panel, min=0, max=100)
+        self.psf_input.SetValue(str(self.context.psf_sigma))
+        self.psf_input.Bind(wx.EVT_SPINCTRLDOUBLE, self.SetPSF)
+        ctl_sizer.Add(self.psf_input, proportion=0, flag=wx.EXPAND | wx.ALL, border=10)
+
         build_mean_reference = wx.Button(ctl_panel, label="Build mean reference track")
         build_mean_reference.Bind(wx.EVT_BUTTON, self.BuildMeanReference)
         ctl_sizer.Add(build_mean_reference, proportion=0, flag=wx.EXPAND | wx.ALL, border=10)
@@ -93,6 +101,15 @@ class ReferenceTrackPanel(wx.Panel, IObserver):
             value = self.half_w_profile_input.GetValue()
             self.context.set_reference_half_w_profile(value)
             self.context.build_mean_reference_track()
+        except Exception as e:
+            pass
+
+    def SetPSF(self, event):
+        try:
+            value = self.psf_input.GetValue()
+            self.context.set_psf_width(value)
+            self.context.build_mean_reference_track()
+            self.context.build_occultation_track()
         except Exception as e:
             pass
 
@@ -152,3 +169,4 @@ class ReferenceTrackPanel(wx.Panel, IObserver):
         self.UpdateImage()
         self.half_w_cut_input.SetValue(self.context.reference_half_w_cut)
         self.half_w_profile_input.SetValue(self.context.reference_half_w_profile)
+        self.psf_input.SetValue(self.context.psf_sigma)

@@ -60,6 +60,11 @@ class OccultationTrackPanel(wx.Panel, IObserver):
         plot_without_sky.Bind(wx.EVT_CHECKBOX, self.PlotWithoutSky)
         ctl_sizer.Add(plot_without_sky, proportion=0, flag=wx.EXPAND | wx.ALL, border=10)
 
+        deconvolution = wx.CheckBox(ctl_panel, label="Deconvolution")
+        deconvolution.SetValue(self.context.deconvolution)
+        deconvolution.Bind(wx.EVT_CHECKBOX, self.Deconvolution)
+        ctl_sizer.Add(deconvolution, proportion=0, flag=wx.EXPAND | wx.ALL, border=10)
+
         label = wx.StaticText(ctl_panel, label="Track half width:")
         ctl_sizer.Add(label, proportion=0, flag=wx.EXPAND | wx.ALL, border=10)
 
@@ -67,6 +72,14 @@ class OccultationTrackPanel(wx.Panel, IObserver):
         self.half_w_input.SetValue(str(self.context.occultation_half_w))
         self.half_w_input.Bind(wx.EVT_SPINCTRL, self.SetOccHalfW)
         ctl_sizer.Add(self.half_w_input, proportion=0, flag=wx.EXPAND | wx.ALL, border=10)
+
+        label = wx.StaticText(ctl_panel, label="Track PSF:")
+        ctl_sizer.Add(label, proportion=0, flag=wx.EXPAND | wx.ALL, border=10)
+
+        self.psf_input = wx.SpinCtrlDouble(ctl_panel, min=0, max=100)
+        self.psf_input.SetValue(str(self.context.psf_sigma))
+        self.psf_input.Bind(wx.EVT_SPINCTRLDOUBLE, self.SetPSF)
+        ctl_sizer.Add(self.psf_input, proportion=0, flag=wx.EXPAND | wx.ALL, border=10)
 
         build_mean_reference = wx.Button(ctl_panel, label="Analyze occultation track")
         build_mean_reference.Bind(wx.EVT_BUTTON, self.AnalyzeOccultation)
@@ -85,10 +98,22 @@ class OccultationTrackPanel(wx.Panel, IObserver):
     def PlotWithoutSky(self, event : wx.CommandEvent):
         self.context.remove_sky = event.IsChecked()
 
+    def Deconvolution(self, event : wx.CommandEvent):
+        self.context.deconvolution = event.IsChecked()
+
     def SetOccHalfW(self, event : wx.CommandEvent):
         try:
             value = self.half_w_input.GetValue()
             self.context.set_occultation_half_w(value)
+            self.context.build_occultation_track()
+        except Exception as e:
+            pass
+
+    def SetPSF(self, event):
+        try:
+            value = self.psf_input.GetValue()
+            self.context.set_psf_width(value)
+            self.context.build_mean_reference_track()
             self.context.build_occultation_track()
         except Exception as e:
             pass
@@ -156,4 +181,4 @@ class OccultationTrackPanel(wx.Panel, IObserver):
     def notify(self):
         self.UpdateImage()
         self.half_w_input.SetValue(self.context.occultation_half_w)
-
+        self.psf_input.SetValue(self.context.psf_sigma)

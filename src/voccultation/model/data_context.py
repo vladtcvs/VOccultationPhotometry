@@ -75,6 +75,8 @@ class DriftContext:
 
         self.mean_reference_track : DriftTrack = None
         self.mean_reference_slices : DriftSlice = None
+        self.psf_sigma : float = 0
+        self.psf_snr : float = 10.0
 
         # ---------- occultation slices ----------------
         self.occultation_slices : DriftSlice = None
@@ -264,6 +266,18 @@ class DriftContext:
         # draw track bounding rectangles
         self._draw_tracks()
         self.notify_observers()
+
+    def estimate_psf_sigma(self):
+        if self.mean_reference_slices is not None:
+            self.psf_sigma = drift_slice.estimate_psf(self.mean_reference_slices)
+        else:
+            self.psf_sigma = 0
+
+    def estimate_psf_snr(self):
+        if self.occultation_slices is not None:
+            self.psf_snr = 100
+        else:
+            self.psf_snr = 100.0
 
     def build_mean_reference_track(self):
         """
