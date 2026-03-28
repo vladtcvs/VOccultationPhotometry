@@ -74,19 +74,31 @@ class DriftTrackRect:
 
         return result, mask
 
+class DriftTrackPath:
+    def __init__(self,
+                 points : np.ndarray,
+                 normals : np.ndarray,
+                 half_w : float):
+        assert(len(points.shape) == 2)
+        assert(points.shape[1] == 2)
+        if normals is not None:
+            assert(len(normals.shape) == 2)
+            assert(points.shape == normals.shape)
+        self.points = points            # points [(y, x)]
+        self.normals = normals          # normals [(ny, nx)]
+        self.half_w = half_w            # 1/2 width of track
+        self.length = self.points.shape[0]
 
 class DriftTrack:
     def __init__(self,
                  gray : np.ndarray,
                  margin : int,
-                 points : np.ndarray,
-                 normals : np.ndarray,
-                 half_w : float):
+                 path : DriftTrackPath):
         self.gray = gray                # part of image
         self.margin = margin            # margin
-        self.points = points            # points [(y, x)]
-        self.normals = normals          # normals [(ny, nx)]
-        self.half_w = half_w            # 1/2 width of track
+        self.path = path
+        self.w = self.gray.shape[1]-2*self.margin
+        self.h = self.gray.shape[0]-2*self.margin
 
     def draw(self, color : tuple, transparency : float) -> np.ndarray:
         rgb = cv2.cvtColor(self.gray.astype(np.uint8), cv2.COLOR_GRAY2RGB)
@@ -96,8 +108,8 @@ class DriftTrack:
         color = np.array(color)
 
         # draw points
-        if self.points is not None:
-            for y, x in self.points:
+        if self.path is not None:
+            for y, x in self.path.points:
                 xx = int(x + left + self.margin)
                 yy = int(y + top + self.margin)
                 if xx < 0 or yy < 0 or xx >= rgb.shape[1] or yy >= rgb.shape[0]:
@@ -105,14 +117,14 @@ class DriftTrack:
                 rgb[yy, xx] = rgb[yy, xx] * transparency + color * (1-transparency)
 
         # draw normals
-        if self.normals is not None and self.points is not None:
-            for index, ((y,x), (ny,nx)) in enumerate(zip(self.points, self.normals)):
+        if self.path is not None:
+            for index, ((y,x), (ny,nx)) in enumerate(zip(self.path.points, self.path.normals)):
                 if index % 10 != 0:
                     continue
-                x1 = int(x - nx*self.half_w + self.margin)
-                y1 = int(y - ny*self.half_w + self.margin)
-                x2 = int(x + nx*self.half_w + self.margin)
-                y2 = int(y + ny*self.half_w + self.margin)
+                x1 = int(x - nx*self.path.half_w + self.margin)
+                y1 = int(y - ny*self.path.half_w + self.margin)
+                x2 = int(x + nx*self.path.half_w + self.margin)
+                y2 = int(y + ny*self.path.half_w + self.margin)
 
                 cv2.line(rgb, (x1+left,y1+top), (x2+left,y2+top), (0,200,0), 1)
         return rgb
@@ -120,9 +132,19 @@ class DriftTrack:
 class DriftSlice:
     def __init__(self, slices : np.ndarray):
         self.slices = slices
+        self.width = self.slices.shape[1]
+        self.mask = 1-np.isnan(self.slices)
+        self.slices[np.where(np.isnan(self.slices))] = 0
 
-    def draw(self) -> np.ndarray:
+    def draw(self, used_width : int) -> np.ndarray:
         rgb = cv2.cvtColor(self.slices.transpose().astype(np.uint8), cv2.COLOR_GRAY2RGB)
+        if used_width is not None:
+            center = int(self.slices.shape[1]/2)
+            l = self.slices.shape[0]
+            cv2.line(rgb, (0,center+used_width), (5,center+used_width), (0,255,0))
+            cv2.line(rgb, (0,center-used_width), (5,center-used_width), (0,255,0))
+            cv2.line(rgb, (l-1,center+used_width), (l-6,center+used_width), (0,255,0))
+            cv2.line(rgb, (l-1,center-used_width), (l-6,center-used_width), (0,255,0))
         return rgb
 
     def plot_slice(self, w : int, h : int, layer : int) -> np.ndarray:
@@ -141,8 +163,14 @@ class DriftSlice:
 
 class DriftProfile:
     def __init__(self, profile : np.ndarray, error : np.ndarray):
+        assert(len(profile.shape) == 1)
         self.profile = profile
-        self.error = error
+        self.length = self.profile.shape[0]
+        if error is not None:
+            assert(error.shape == self.profile.shape)
+            self.error = error
+        else:
+            self.error = np.zeros(self.profile.shape)
 
     def plot_profile(self, w : int, h : int):
         L = self.profile.shape[0]

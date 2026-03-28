@@ -16,9 +16,7 @@ import numpy as np
 from typing import List
 from io import BytesIO
 
-import matplotlib
 import matplotlib.pyplot as plt
-matplotlib.use("Agg")
 
 def plot_to_numpy(xrange : np.ndarray,
                   datas : List[np.ndarray],

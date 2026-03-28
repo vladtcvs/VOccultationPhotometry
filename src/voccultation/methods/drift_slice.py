@@ -12,8 +12,11 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 #
 
+from typing import Tuple
 import numpy as np
 import math
+
+from voccultation.data_structures.data_containers import DriftProfile, DriftSlice, DriftTrackPath
 
 def build_track_normals(points : np.ndarray)-> np.ndarray:
     # length of track along main axis
@@ -51,7 +54,9 @@ def _getpixel(track : np.ndarray, y : int, x : int):
         return np.nan
     return track[y,x]
 
-def getpixel(track : np.ndarray, y : float, x : float) -> float:
+def getpixel(track : np.ndarray,
+             y : float,
+             x : float) -> float:
     y0 = math.floor(y)
     x0 = math.floor(x)
     ky = y - y0
@@ -65,7 +70,11 @@ def getpixel(track : np.ndarray, y : float, x : float) -> float:
     v = interpolate(v0, v1, ky)
     return v
 
-def make_slice(track : np.ndarray, position, direction, half_w : int, offset : float):
+def _make_slice(track : np.ndarray,
+               position : Tuple[float, float],
+               direction : Tuple[float, float],
+               half_w : int,
+               offset : float) -> np.ndarray:
     y,x = position
     ty,tx = direction
     slice = np.zeros((2*half_w+1,))
@@ -75,23 +84,23 @@ def make_slice(track : np.ndarray, position, direction, half_w : int, offset : f
         slice[i] = getpixel(track, y=py, x=px)
     return slice
 
-def slice_track(track : np.ndarray, reference_track_points : np.ndarray, normals : np.ndarray, half_w : int, margin : int, offset : float) -> np.ndarray:
-    L = reference_track_points.shape[0]
-    slices = np.zeros((L,2*half_w+1))
+def slice_track(track_image : np.ndarray,
+                track_path : DriftTrackPath,
+                margin : int,
+                offset : float) -> DriftSlice:
+    L = track_path.length
+    slices = np.zeros((L,2*track_path.half_w+1))
     shift = np.array([margin, margin])
     for i in range(L):
-        point = reference_track_points[i,:] + shift
-        normal = normals[i,:]
-        track_slice = make_slice(track, point, normal, half_w, offset)
+        point = track_path.points[i,:] + shift
+        normal = track_path.normals[i,:]
+        track_slice = _make_slice(track_image, point, normal, track_path.half_w, offset)
         slices[i,:] = track_slice
-    return slices
+    return DriftSlice(slices)
 
-def slices_to_profile(slices : np.ndarray) -> np.ndarray:
-    mask = 1-np.isnan(slices)
-    weight = np.sum(mask, axis=1)
-    width = slices.shape[1]
-    slices[np.where(np.isnan(slices))] = 0
-    value = np.sum(slices, axis=1)
-    profile = value / weight * width
+def slices_to_profile(slices : DriftSlice) -> DriftProfile:
+    weight = np.sum(slices.mask, axis=1) / slices.width
+    value = np.sum(slices.slices, axis=1)
+    profile = value / weight
     profile[np.where(np.isnan(profile))] = 0
-    return profile
+    return DriftProfile(profile, None)

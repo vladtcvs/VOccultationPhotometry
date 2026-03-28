@@ -14,7 +14,6 @@
 
 import csv
 import wx
-import wx.lib.scrolledpanel as scrolled
 
 from voccultation.model.data_context import DriftContext, IObserver
 
@@ -55,10 +54,21 @@ class ReferenceTrackPanel(wx.Panel, IObserver):
         ctl_panel = wx.Panel(self)
         ctl_panel.SetSizer(ctl_sizer)
 
-        self.half_w_input = wx.SpinCtrl(ctl_panel, min=1, max=100)
-        self.half_w_input.SetValue(str(self.context.reference_half_w))
-        self.half_w_input.Bind(wx.EVT_SPINCTRL, self.SetRefHalfW)
-        ctl_sizer.Add(self.half_w_input, proportion=0, flag=wx.EXPAND | wx.ALL, border=10)
+        label = wx.StaticText(ctl_panel, label="Reference track half width:")
+        ctl_sizer.Add(label, proportion=0, flag=wx.EXPAND | wx.ALL, border=10)
+
+        self.half_w_cut_input = wx.SpinCtrl(ctl_panel, min=2, max=100)
+        self.half_w_cut_input.SetValue(str(self.context.reference_half_w_cut))
+        self.half_w_cut_input.Bind(wx.EVT_SPINCTRL, self.SetRefHalfW_Cut)
+        ctl_sizer.Add(self.half_w_cut_input, proportion=0, flag=wx.EXPAND | wx.ALL, border=10)
+
+        label = wx.StaticText(ctl_panel, label="Reference track half width (used for profile):")
+        ctl_sizer.Add(label, proportion=0, flag=wx.EXPAND | wx.ALL, border=10)
+
+        self.half_w_profile_input = wx.SpinCtrl(ctl_panel, min=1, max=100)
+        self.half_w_profile_input.SetValue(str(self.context.reference_half_w_profile))
+        self.half_w_profile_input.Bind(wx.EVT_SPINCTRL, self.SetRefHalfW_Profile)
+        ctl_sizer.Add(self.half_w_profile_input, proportion=0, flag=wx.EXPAND | wx.ALL, border=10)
 
         build_mean_reference = wx.Button(ctl_panel, label="Build mean reference track")
         build_mean_reference.Bind(wx.EVT_BUTTON, self.BuildMeanReference)
@@ -70,10 +80,18 @@ class ReferenceTrackPanel(wx.Panel, IObserver):
 
         main_sizer.Add(ctl_panel, proportion=0, flag=wx.ALL | wx.ALIGN_CENTER_VERTICAL, border=8)
 
-    def SetRefHalfW(self, event):
+    def SetRefHalfW_Cut(self, event):
         try:
-            value = self.half_w_input.GetValue()
-            self.context.set_reference_half_w(value)
+            value = self.half_w_cut_input.GetValue()
+            self.context.set_reference_half_w_cut(value)
+            self.context.build_mean_reference_track()
+        except Exception as e:
+            pass
+    
+    def SetRefHalfW_Profile(self, event):
+        try:
+            value = self.half_w_profile_input.GetValue()
+            self.context.set_reference_half_w_profile(value)
             self.context.build_mean_reference_track()
         except Exception as e:
             pass
@@ -132,4 +150,5 @@ class ReferenceTrackPanel(wx.Panel, IObserver):
 
     def notify(self):
         self.UpdateImage()
-        self.half_w_input.SetValue(self.context.reference_half_w)
+        self.half_w_cut_input.SetValue(self.context.reference_half_w_cut)
+        self.half_w_profile_input.SetValue(self.context.reference_half_w_profile)

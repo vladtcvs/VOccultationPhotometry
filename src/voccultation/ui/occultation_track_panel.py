@@ -14,12 +14,11 @@
 
 import csv
 import wx
-import wx.lib.scrolledpanel as scrolled
 
 from voccultation.model.data_context import DriftContext, IObserver
 from voccultation.ui.navigation_panel import NavigationPanel
 
-class OccultationTrackPanel(wx.Panel):
+class OccultationTrackPanel(wx.Panel, IObserver):
     def __init__(self, parent, context : DriftContext):
         wx.Panel.__init__(self, parent)
         self.context = context
@@ -56,10 +55,13 @@ class OccultationTrackPanel(wx.Panel):
         ctl_panel = wx.Panel(self)
         ctl_panel.SetSizer(ctl_sizer)
 
-        plot_without_sky = wx.CheckBox(ctl_panel, label="Remove average sky value")
-        plot_without_sky.SetValue(self.context.build_true_occultation_profile)
+        plot_without_sky = wx.CheckBox(ctl_panel, label="Remove sky value")
+        plot_without_sky.SetValue(self.context.remove_sky)
         plot_without_sky.Bind(wx.EVT_CHECKBOX, self.PlotWithoutSky)
         ctl_sizer.Add(plot_without_sky, proportion=0, flag=wx.EXPAND | wx.ALL, border=10)
+
+        label = wx.StaticText(ctl_panel, label="Track half width:")
+        ctl_sizer.Add(label, proportion=0, flag=wx.EXPAND | wx.ALL, border=10)
 
         self.half_w_input = wx.SpinCtrl(ctl_panel, min=1, max=100)
         self.half_w_input.SetValue(str(self.context.occultation_half_w))
@@ -81,7 +83,7 @@ class OccultationTrackPanel(wx.Panel):
         main_sizer.Add(ctl_panel, proportion=0, flag=wx.ALL | wx.ALIGN_CENTER_VERTICAL, border=8)
 
     def PlotWithoutSky(self, event : wx.CommandEvent):
-        self.context.build_true_occultation_profile = event.IsChecked()
+        self.context.remove_sky = event.IsChecked()
 
     def SetOccHalfW(self, event : wx.CommandEvent):
         try:
@@ -129,7 +131,6 @@ class OccultationTrackPanel(wx.Panel):
             self.occ_profile_ctrl.SetBitmap(gray_bitmap)
             self.occ_profile_ctrl.Refresh()
 
-
         self.Layout()
         self.Refresh()
 
@@ -155,3 +156,4 @@ class OccultationTrackPanel(wx.Panel):
     def notify(self):
         self.UpdateImage()
         self.half_w_input.SetValue(self.context.occultation_half_w)
+
