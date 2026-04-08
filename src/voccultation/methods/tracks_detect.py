@@ -26,6 +26,19 @@ def detect_bold_tracks(gray : np.ndarray,
                        smooth_size : int = 11,
                        blur_size : int = 35,
                        threshold_k : float = 1.1) -> List[DriftTrackRect]:
+    """
+    Detect bold tracks in the input image.
+
+    Parameters:
+        gray (np.ndarray): Input grayscale image.
+        num_tracks (int, optional): Number of tracks to detect. Defaults to 4.
+        smooth_size (int, optional): Size of Gaussian blur for smoothing. Defaults to 11.
+        blur_size (int, optional): Size of Gaussian blur for blurring. Defaults to 35.
+        threshold_k (float, optional): Threshold value for blob detection. Defaults to 1.1.
+
+    Returns:
+        List[DriftTrackRect]: List of detected tracks.
+    """
     if blur_size % 2 == 0:
         blur_size += 1
     if smooth_size % 2 == 0:
@@ -91,6 +104,15 @@ def detect_bold_tracks(gray : np.ndarray,
     return tracks
 
 def _clear_overlapped(tracks : List[DriftTrackRect]) -> List[DriftTrackRect]:
+    """
+    Remove overlapped tracks from the input list.
+
+    Parameters:
+        tracks (List[DriftTrackRect]): Input list of tracks.
+
+    Returns:
+        List[DriftTrackRect]: Filtered list of non-overlapped tracks.
+    """
     not_overlapped = []
     for ind1, track1 in enumerate(tracks):
         for ind2, track2 in enumerate(tracks):
@@ -103,6 +125,16 @@ def _clear_overlapped(tracks : List[DriftTrackRect]) -> List[DriftTrackRect]:
     return not_overlapped
 
 def _clear_bad_size(tracks : List[DriftTrackRect], kappa : float) -> List[DriftTrackRect]:
+    """
+    Remove tracks with sizes outside the specified range from the input list.
+
+    Parameters:
+        tracks (List[DriftTrackRect]): Input list of tracks.
+        kappa (float): Standard deviation multiplier for size filtering.
+
+    Returns:
+        List[DriftTrackRect]: Filtered list of tracks within the specified size range.
+    """
     widths = []
     heights = []
     for track in tracks:
@@ -123,6 +155,15 @@ def _clear_bad_size(tracks : List[DriftTrackRect], kappa : float) -> List[DriftT
     return goods
 
 def _correlate_tracks(tracks : List[DriftTrackRect]) -> List[DriftTrackRect]:
+    """
+    Align input tracks to a common size.
+
+    Parameters:
+        tracks (List[DriftTrackRect]): Input list of tracks.
+
+    Returns:
+        List[DriftTrackRect]: Aligned list of tracks.
+    """
     maxw = 0
     maxh = 0
     for track in tracks:
@@ -146,7 +187,17 @@ def _correlate_tracks(tracks : List[DriftTrackRect]) -> List[DriftTrackRect]:
 def detect_reference_tracks(gray : np.ndarray,
                             count : int,
                             kappas : List[float]) -> List[DriftTrackRect]:
-    """Detect reference tracks"""
+    """
+    Detect reference tracks in the input image.
+
+    Parameters:
+        gray (np.ndarray): Input grayscale image.
+        count (int): Number of tracks to detect.
+        kappas (List[float], optional): List of standard deviation multipliers for size filtering. Defaults to None.
+
+    Returns:
+        List[DriftTrackRect]: List of detected reference tracks.
+    """
     tracks = detect_bold_tracks(gray, count)
     tracks = _clear_overlapped(tracks)
     if kappas is not None:

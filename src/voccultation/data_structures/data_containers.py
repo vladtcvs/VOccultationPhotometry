@@ -19,6 +19,20 @@ import cv2
 from voccultation.model.plot import plot_to_numpy
 
 class DriftTrackRect:
+    """
+    Represents a rectangular region of interest on an image.
+
+    Attributes:
+        left (int): The x-coordinate of the left edge of the rectangle.
+        right (int): The x-coordinate of the right edge of the rectangle.
+        top (int): The y-coordinate of the top edge of the rectangle.
+        bottom (int): The y-coordinate of the bottom edge of the rectangle.
+
+    Methods:
+        point_inside_rect(x, y) -> bool: Check if a point is inside the rectangle.
+        detect_overlap(other) -> bool: Detect overlap with another rectangle.
+        extract_track(gray, margin) -> Tuple[np.ndarray, np.ndarray]: Extract a track from an image.
+    """
     def __init__(self, left, right, top, bottom):
         self.left = left
         self.right = right
@@ -75,6 +89,17 @@ class DriftTrackRect:
         return result, mask
 
 class DriftTrackPath:
+    """
+    Represents a path of points on an image.
+
+    Attributes:
+        points (np.ndarray): The points in the path.
+        normals (np.ndarray): The normals to the points.
+        half_w (float): The half-width of the track.
+
+    Methods:
+        None
+    """
     def __init__(self,
                  points : np.ndarray,
                  normals : np.ndarray,
@@ -90,6 +115,18 @@ class DriftTrackPath:
         self.length = self.points.shape[0]
 
 class DriftTrack:
+    """
+    Represents a track of stars on an image.
+
+    Attributes:
+        gray (np.ndarray): The image data.
+        margin (int): The margin around the track.
+        path (DriftTrackPath): The path of points in the track.
+
+    Methods:
+        draw(color, transparency) -> np.ndarray: Draw the track and its normals.
+        draw_in_place(rgb, left, top, color, transparency) -> np.ndarray: Draw the track and its normals in place.
+    """
     def __init__(self,
                  gray : np.ndarray,
                  margin : int,
@@ -130,6 +167,19 @@ class DriftTrack:
         return rgb
 
 class DriftSlice:
+    """
+    Represents an extracted star track.
+
+    Attributes:
+        slices (np.ndarray): The sliced data.
+        width (int): The width of the slice, taking into account the half width removed from each side.
+        mask (np.ndarray): A mask for the sliced data.
+
+    Methods:
+        draw(used_width) -> np.ndarray: Draw the slice.
+        plot_slice(w, h, layer) -> np.ndarray: Plot a single slice.
+        plot_slices(w, h) -> np.ndarray: Plot multiple slices.
+    """
     def __init__(self, slices : np.ndarray):
         self.slices = slices
         self.width = self.slices.shape[1]
@@ -162,6 +212,17 @@ class DriftSlice:
         return rgb
 
 class DriftProfile:
+    """
+    Represents a profile of star track.
+
+    Attributes:
+        profile (np.ndarray): The profile data.
+        error (np.ndarray): The error in the profile data.
+
+    Methods:
+        plot_profile(w, h) -> np.ndarray: Plot the profile with error bars.
+        plot_profile_with_error(w, h) -> np.ndarray: Plot the profile and its error.
+    """
     def __init__(self, profile : np.ndarray, error : np.ndarray):
         assert(len(profile.shape) == 1)
         self.profile = profile

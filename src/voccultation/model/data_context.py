@@ -32,6 +32,9 @@ class IObserver:
 
 class DriftContext:
     def __init__(self):
+        """
+        Initialize the drift context with empty data.
+        """
         self.observers : List[IObserver] = []
 
         # original frame
@@ -97,34 +100,70 @@ class DriftContext:
         self.occultation_plot : np.ndarray = None
 
     def add_observer(self, observer : IObserver):
+        """
+        Add an observer to the drift context.
+
+        Parameters:
+            observer (IObserver): Observer to add.
+        """
         self.observers.append(observer)
 
     def notify_observers(self):
+        """
+        Notify all observers in the drift context.
+        """
         for observer in self.observers:
             observer.notify()
 
     def set_image(self, gray : np.ndarray):
+        """
+        Set the image for the drift context.
+
+        Parameters:
+            gray (np.ndarray): Grayscale image to set.
+        """
         self.gray = gray
         self.rgb = cv2.cvtColor(self.gray.astype(np.uint8), cv2.COLOR_GRAY2RGB)
         self.notify_observers()
 
     def set_reference_half_w_cut(self, half_w : int):
+        """
+        Set the reference track half width value for track slices extraction.
+
+        Parameters:
+            half_w (int): New half width cut value.
+        """
         self.reference_half_w_cut = half_w
         if 2*self.reference_half_w_profile > self.reference_half_w_cut:
             self.reference_half_w_profile = int(self.reference_half_w_cut/2)
         self.notify_observers()
     
     def set_reference_half_w_profile(self, half_w : int):
+        """
+        Set the reference track half width value for track profile calculation.
+
+        Parameters:
+            half_w (int): New half width profile value.
+        """
         self.reference_half_w_profile = half_w
         if 2*self.reference_half_w_profile > self.reference_half_w_cut:
             self.reference_half_w_cut = 2*self.reference_half_w_profile
         self.notify_observers()
 
     def set_occultation_half_w(self, half_w : int):
+        """
+        Set the occultation track half width value.
+
+        Parameters:
+            half_w (int): New half width value.
+        """
         self.occultation_half_w = half_w
         self.notify_observers()
 
     def display_tracks(self):
+        """
+        Display tracks in the drift context.
+        """
         if self.gray is None:
             self.rgb = None
             return
@@ -209,6 +248,9 @@ class DriftContext:
         self.display_tracks()
 
     def detect_tracks(self):
+        """
+        Detect tracks in the drift context.
+        """
         self.mean_reference_track = None
         self.mean_reference_profile = None
         self.mean_reference_image = None
@@ -224,6 +266,9 @@ class DriftContext:
         self.notify_observers()
 
     def build_mean_reference_track(self):
+        """
+        Build mean reference track in the drift context.
+        """
         if len(self.reference_track_rects) == 0:
             self.mean_reference_track = None
             self.mean_reference_profile = None
@@ -273,6 +318,13 @@ class DriftContext:
         self.notify_observers()
 
     def specify_occultation_track(self, x0 : int, y0 : int):
+        """
+        Specify occultation track position in the drift context.
+
+        Parameters:
+            x0 (int): X-coordinate of the position.
+            y0 (int): Y-coordinate of the position.
+        """
         if self.mean_reference_track is None:
             self.occultation_track_rect = None
             self.occultation_track = None
@@ -285,6 +337,9 @@ class DriftContext:
         self.occultation_track_rect = DriftTrackRect(x0, x0 + w, y0, y0 + h)
 
     def build_occultation_track(self):
+        """
+        Build occultation track in the drift context.
+        """
         if self.mean_reference_track is None:
             self.occultation_track_rect = None
             self.occultation_track = None

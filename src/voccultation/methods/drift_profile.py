@@ -20,6 +20,16 @@ from voccultation.data_structures.data_containers import DriftProfile
 from voccultation.methods.profile_deconvolution import wiener_deconvolution
 
 def smooth_track_profile(profile : DriftProfile, smooth : int) -> np.ndarray:
+    """
+    Smooths a track profile.
+
+    Parameters:
+        profile (DriftProfile): Profile to smooth
+        smooth (int): Window size for smoothing
+
+    Returns:
+        np.ndarray: Smoothed profile
+    """
     if smooth % 2 == 0:
         smooth += 1
     hw = int(smooth/2)
@@ -35,7 +45,14 @@ def smooth_track_profile(profile : DriftProfile, smooth : int) -> np.ndarray:
     return average
 
 def calculate_reference_profile(reference_profiles : List[DriftProfile]) -> DriftProfile:
-    """Calculate mean reference profile
+    """
+    Calculates the mean reference profile.
+
+    Parameters:
+        reference_profiles (List[DriftProfile]): List of reference profiles
+
+    Returns:
+        DriftProfile: Mean reference profile
     """
     L = reference_profiles[0].profile.shape[0]
     mean_profile = np.zeros((L,))
@@ -52,11 +69,16 @@ def calculate_reference_profile(reference_profiles : List[DriftProfile]) -> Drif
     return DriftProfile(mean_profile, errs)
 
 def calculate_sky_profile(sky_profiles : List[DriftProfile]) -> DriftProfile:
-    """Calculate sky profile parallel to track.
-       We use linear polynomial approximation for true sky brighness along track
-       I_sky(s) = a*s + b,
-       where s is a index along track
-       """
+    """
+    Calculates the sky profile parallel to track.
+    Uses linear polynomial approximation for true sky brighness along track
+
+    Parameters:
+        sky_profiles (List[DriftProfile]): List of sky profiles
+
+    Returns:
+        DriftProfile: Sky profile
+    """
     L = sky_profiles[0].length
     N = len(sky_profiles)
     xs = np.zeros((L*N,))
@@ -76,6 +98,16 @@ def calculate_sky_profile(sky_profiles : List[DriftProfile]) -> DriftProfile:
 
 def compensate_reference_profile(drift_profile : DriftProfile,
                                  reference_profile : DriftProfile) -> DriftProfile:
+    """
+    Compensates a profile using a reference profile.
+
+    Parameters:
+        drift_profile (DriftProfile): Profile to compensate
+        reference_profile (DriftProfile): Reference profile
+
+    Returns:
+        DriftProfile: Compensated profile
+    """
     return drift_profile
 
 
@@ -83,6 +115,18 @@ def calculate_true_drift_profile(drift_profile : DriftProfile,
                                  side_profiles : List[DriftProfile],
                                  reference_profile : DriftProfile,
                                  params : dict) -> Tuple[DriftProfile, dict]:
+    """
+    Calculates the true drift profile.
+
+    Parameters:
+        drift_profile (DriftProfile): Profile to calculate
+        side_profiles (List[DriftProfile]): Side profiles
+        reference_profile (DriftProfile): Reference profile
+        params (dict): Parameters
+
+    Returns:
+        Tuple[DriftProfile, dict]: True drift profile and statistics
+    """
     L = drift_profile.length
     for side_profile in side_profiles:
         assert side_profile.length==L
@@ -105,18 +149,3 @@ def calculate_true_drift_profile(drift_profile : DriftProfile,
     }
     true_profile = DriftProfile(drift_profile.profile, np.sqrt(sky_profile.error**2))
     return true_profile, stats
-
-def reference_profile_time_analyze(profile : np.ndarray) -> np.ndarray:
-    """Find such time of each point of profile, that stretching profile according to such times, make it flat"""
-    L = profile.shape[0]
-    smooth_window = int(L / 8)
-    smoothed = smooth_track_profile(profile, smooth_window)
-    speed = 1 / smoothed
-    speed = smooth_track_profile(speed, smooth_window)
-    
-    dts = 1 / speed
-    T = np.sum(dts)
-    return dts * L / T
-
-def profile_according_to_time(profile : np.ndarray, dtimes : np.ndarray):
-    return profile / dtimes

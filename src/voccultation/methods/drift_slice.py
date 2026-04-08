@@ -19,6 +19,15 @@ import math
 from voccultation.data_structures.data_containers import DriftProfile, DriftSlice, DriftTrackPath
 
 def build_track_normals(points : np.ndarray)-> np.ndarray:
+    """
+    Builds normals to track at each point.
+
+    Parameters:
+        points (np.ndarray): Array of track points
+
+    Returns:
+        np.ndarray: Normals to track at each point
+    """
     # length of track along main axis
     L = points.shape[0]
 
@@ -41,6 +50,17 @@ def build_track_normals(points : np.ndarray)-> np.ndarray:
     return normals
 
 def interpolate(v1 : float, v2 : float, k):
+    """
+    Interpolates between two values.
+
+    Parameters:
+        v1 (float): First value
+        v2 (float): Second value
+        k (float): Interpolation coefficient (between 0 and 1)
+
+    Returns:
+        float: Interpolated value
+    """
     if np.isnan(v1):
         return v2
     if np.isnan(v2):
@@ -48,6 +68,17 @@ def interpolate(v1 : float, v2 : float, k):
     return v1*(1-k)+v2*k
 
 def _getpixel(track : np.ndarray, y : int, x : int):
+    """
+    Gets pixel value at specified coordinates.
+
+    Parameters:
+        track (np.ndarray): 2D array of pixel values
+        y (int): Y-coordinate
+        x (int): X-coordinate
+
+    Returns:
+        float: Pixel value
+    """
     if x < 0 or y < 0:
         return np.nan
     if x >= track.shape[1] or y >= track.shape[0]:
@@ -57,6 +88,17 @@ def _getpixel(track : np.ndarray, y : int, x : int):
 def getpixel(track : np.ndarray,
              y : float,
              x : float) -> float:
+    """
+    Gets pixel value at specified coordinates (with bilinear interpolation).
+
+    Parameters:
+        track (np.ndarray): 2D array of pixel values
+        y (float): Y-coordinate
+        x (float): X-coordinate
+
+    Returns:
+        float: Pixel value
+    """
     y0 = math.floor(y)
     x0 = math.floor(x)
     ky = y - y0
@@ -75,6 +117,19 @@ def _make_slice(track : np.ndarray,
                direction : Tuple[float, float],
                half_w : int,
                offset : float) -> np.ndarray:
+    """
+    Creates a slice of the track at specified position and direction.
+
+    Parameters:
+        track (np.ndarray): 2D array of pixel values
+        position (Tuple[float, float]): Position of the slice
+        direction (Tuple[float, float]): Direction of the slice
+        half_w (int): Half-width of the slice
+        offset (float): Offset from the center
+
+    Returns:
+        np.ndarray: Slice of the track
+    """
     y,x = position
     ty,tx = direction
     slice = np.zeros((2*half_w+1,))
@@ -88,6 +143,18 @@ def slice_track(track_image : np.ndarray,
                 track_path : DriftTrackPath,
                 margin : int,
                 offset : float) -> DriftSlice:
+    """
+    Creates a slice of the track at specified position and direction.
+
+    Parameters:
+        track_image (np.ndarray): 2D array of pixel values
+        track_path (DriftTrackPath): Track path object
+        margin (int): Margin from the center
+        offset (float): Offset from the center
+
+    Returns:
+        DriftSlice: Slice of the track
+    """
     L = track_path.length
     slices = np.zeros((L,2*track_path.half_w+1))
     shift = np.array([margin, margin])
@@ -99,6 +166,15 @@ def slice_track(track_image : np.ndarray,
     return DriftSlice(slices)
 
 def slices_to_profile(slices : DriftSlice) -> DriftProfile:
+    """
+    Converts a slice to a profile.
+
+    Parameters:
+        slices (DriftSlice): Slice of the track
+
+    Returns:
+        DriftProfile: Profile of the track
+    """
     weight = np.sum(slices.mask, axis=1) / slices.width
     value = np.sum(slices.slices, axis=1)
     profile = value / weight

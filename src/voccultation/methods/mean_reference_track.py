@@ -18,6 +18,17 @@ from typing import List, Tuple
 from voccultation.data_structures.data_containers import DriftTrackPath, DriftTrackRect
 
 def mean_track(tracks : List[DriftTrackRect], image : np.ndarray, margin : int) -> np.ndarray:
+    """
+    Compute the average track from a list of tracks.
+
+    Parameters:
+        tracks (List[DriftTrackRect]): List of tracks to compute the average from.
+        image (np.ndarray): Input grayscale image.
+        margin (int): Margin around the track.
+
+    Returns:
+        np.ndarray: Average track.
+    """
     w = tracks[0].w+2*margin
     h = tracks[0].h+2*margin
     sum_track = np.zeros((h,w))
@@ -32,6 +43,16 @@ def mean_track(tracks : List[DriftTrackRect], image : np.ndarray, margin : int) 
     return sum_track
 
 def _mean_track_to_points(track : np.ndarray, margin : int) -> Tuple[np.ndarray, bool]:
+    """
+    Convert a mean track to points - detect position of brightest pixels on each row of image.
+
+    Parameters:
+        track (np.ndarray): Mean track image.
+        margin (int): Margin around the track.
+
+    Returns:
+        Tuple[np.ndarray, bool]: Array of points and flag indicating if the track is transposed.
+    """
     w = track.shape[1]
     h = track.shape[0]
     
@@ -55,6 +76,16 @@ def _mean_track_to_points(track : np.ndarray, margin : int) -> Tuple[np.ndarray,
     return np.array(points), transposed
 
 def _smooth_track_points(points : np.ndarray, transposed : bool) -> np.ndarray:
+    """
+    Smooth a list of track points.
+
+    Parameters:
+        points (np.ndarray): List of track points.
+        transposed (bool): Flag indicating if the track is transposed.
+
+    Returns:
+        np.ndarray: Smoothed list of track points.
+    """
     hw = 2
     L = points.shape[0]
     if not transposed:
@@ -78,7 +109,17 @@ def _smooth_track_points(points : np.ndarray, transposed : bool) -> np.ndarray:
 def build_mean_reference_track(gray : np.ndarray,
                                references : List[DriftTrackRect],
                                margin : int) -> Tuple[np.ndarray, DriftTrackPath]:
-    """Build reference track image"""
+    """
+    Build reference track image from a list of tracks.
+
+    Parameters:
+        gray (np.ndarray): Input grayscale image.
+        references (List[DriftTrackRect]): List of tracks to build the reference track from.
+        margin (int): Margin around the track.
+
+    Returns:
+        Tuple[np.ndarray, DriftTrackPath]: Reference track image and path.
+    """
     track = mean_track(references, gray, margin)
     points, transposed = _mean_track_to_points(track, margin)
     points = _smooth_track_points(points, transposed)
