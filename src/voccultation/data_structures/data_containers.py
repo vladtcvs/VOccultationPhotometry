@@ -33,7 +33,10 @@ class DriftTrackRect:
         detect_overlap(other) -> bool: Detect overlap with another rectangle.
         extract_track(gray, margin) -> Tuple[np.ndarray, np.ndarray]: Extract a track from an image.
     """
-    def __init__(self, left, right, top, bottom):
+    def __init__(self, left : int, right : int, top : int, bottom : int):
+        assert right > left, "right must be greater than left"
+        assert bottom > top, "bottom must be greater than top"
+
         self.left = left
         self.right = right
         self.top = top
@@ -93,8 +96,8 @@ class DriftTrackPath:
     Represents a path of points on an image.
 
     Attributes:
-        points (np.ndarray): The points in the path.
-        normals (np.ndarray): The normals to the points.
+        points (np.ndarray): The points in the path. Array of pairs [(x,y)]
+        normals (np.ndarray): The normals to the points.  Array of pairs [(nx,ny)]
         half_w (float): The half-width of the track.
 
     Methods:
@@ -102,13 +105,17 @@ class DriftTrackPath:
     """
     def __init__(self,
                  points : np.ndarray,
-                 normals : np.ndarray,
+                 normals : np.ndarray | None,
                  half_w : float):
-        assert(len(points.shape) == 2)
-        assert(points.shape[1] == 2)
+        assert len(points.shape) == 2
+        assert points.shape[1] == 2
+        assert half_w >= 0
+
         if normals is not None:
-            assert(len(normals.shape) == 2)
-            assert(points.shape == normals.shape)
+            assert len(normals.shape) == 2
+            assert normals.shape[1] == 2
+            assert normals.shape[0] == points.shape[0]
+
         self.points = points            # points [(y, x)]
         self.normals = normals          # normals [(ny, nx)]
         self.half_w = half_w            # 1/2 width of track
@@ -119,7 +126,7 @@ class DriftTrack:
     Represents a track of stars on an image.
 
     Attributes:
-        gray (np.ndarray): The image data.
+        gray (np.ndarray): The image data. 2-dimensional array with gray image
         margin (int): The margin around the track.
         path (DriftTrackPath): The path of points in the track.
 
@@ -131,6 +138,9 @@ class DriftTrack:
                  gray : np.ndarray,
                  margin : int,
                  path : DriftTrackPath):
+        assert len(gray.shape) == 2
+        assert margin >= 0
+
         self.gray = gray                # part of image
         self.margin = margin            # margin
         self.path = path
@@ -181,7 +191,10 @@ class DriftSlice:
         plot_slices(w, h) -> np.ndarray: Plot multiple slices.
     """
     def __init__(self, slices : np.ndarray):
+        assert len(slices.shape) == 2
+
         self.slices = slices
+        self.length = self.slices.shape[0] 
         self.width = self.slices.shape[1]
         self.mask = 1-np.isnan(self.slices)
         self.slices[np.where(np.isnan(self.slices))] = 0
@@ -189,7 +202,7 @@ class DriftSlice:
     def draw(self, used_width : int) -> np.ndarray:
         rgb = cv2.cvtColor(self.slices.transpose().astype(np.uint8), cv2.COLOR_GRAY2RGB)
         if used_width is not None:
-            center = int(self.slices.shape[1]/2)
+            center = int(self.width/2)
             l = self.slices.shape[0]
             cv2.line(rgb, (0,center+used_width), (5,center+used_width), (0,255,0))
             cv2.line(rgb, (0,center-used_width), (5,center-used_width), (0,255,0))
@@ -198,13 +211,13 @@ class DriftSlice:
         return rgb
 
     def plot_slice(self, w : int, h : int, layer : int) -> np.ndarray:
-        xr = range(self.slices.shape[0])
+        xr = range(self.length)
         values = self.slices[layer]
         rgb = plot_to_numpy(xr, [values], w, h)
         return rgb
 
     def plot_slices(self, w : int, h : int) -> np.ndarray:
-        xr = range(self.slices.shape[0])
+        xr = range(self.length)
         values = np.mean(self.slices, axis=0)
         top = np.amax(self.slices, axis=0)
         low = np.amin(self.slices, axis=0)
@@ -216,15 +229,16 @@ class DriftProfile:
     Represents a profile of star track.
 
     Attributes:
-        profile (np.ndarray): The profile data.
-        error (np.ndarray): The error in the profile data.
+        profile (np.ndarray): The profile data. 1-dimension array
+        error (np.ndarray): The error in the profile data. 1-dimension array
 
     Methods:
         plot_profile(w, h) -> np.ndarray: Plot the profile with error bars.
         plot_profile_with_error(w, h) -> np.ndarray: Plot the profile and its error.
     """
-    def __init__(self, profile : np.ndarray, error : np.ndarray):
+    def __init__(self, profile : np.ndarray, error : np.ndarray | None):
         assert(len(profile.shape) == 1)
+
         self.profile = profile
         self.length = self.profile.shape[0]
         if error is not None:
@@ -234,13 +248,13 @@ class DriftProfile:
             self.error = np.zeros(self.profile.shape)
 
     def plot_profile(self, w : int, h : int):
-        L = self.profile.shape[0]
+        L = self.length
         xr = range(L)
         rgb = plot_to_numpy(xr, [self.profile], w, h)
         return rgb
 
     def plot_profile_with_error(self, w : int, h : int):
-        L = self.profile.shape[0]
+        L = self.length
         xr = range(L)
         rgb = plot_to_numpy(xr, [self.profile, self.profile + self.error, self.profile - self.error], w, h)
         return rgb
