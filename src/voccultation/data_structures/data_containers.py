@@ -109,7 +109,9 @@ class DriftTrackPath:
                  half_w : float):
         assert len(points.shape) == 2
         assert points.shape[1] == 2
-        assert half_w >= 0
+
+        if half_w is not None:
+            assert half_w >= 0
 
         if normals is not None:
             assert len(normals.shape) == 2
