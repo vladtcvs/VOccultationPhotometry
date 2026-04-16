@@ -162,6 +162,26 @@ class DriftContext:
         self.occultation_half_w = half_w
         self.notify_observers()
 
+    def set_psf_sigma(self, sigma : float):
+        """
+        Set star PSF sigma
+
+        Parameters:
+            sigma (float): PSF sigma
+        """
+        self.psf_sigma = sigma
+        self.notify_observers()
+
+    def set_psf_snr(self, snr : float):
+        """
+        Set star PSF SNR
+
+        Parameters:
+            snr (float): PSF SNR
+        """
+        self.psf_snr = snr
+        self.notify_observers()
+
     def display_tracks(self):
         """
         Display tracks in the drift context.

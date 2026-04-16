@@ -73,10 +73,15 @@ class ReferenceTrackPanel(wx.Panel, IObserver):
         label = wx.StaticText(ctl_panel, label="Track PSF:")
         ctl_sizer.Add(label, proportion=0, flag=wx.EXPAND | wx.ALL, border=10)
 
-        self.psf_input = wx.SpinCtrlDouble(ctl_panel, min=0, max=100)
-        self.psf_input.SetValue(str(self.context.psf_sigma))
-        self.psf_input.Bind(wx.EVT_SPINCTRLDOUBLE, self.SetPSF)
-        ctl_sizer.Add(self.psf_input, proportion=0, flag=wx.EXPAND | wx.ALL, border=10)
+        self.psf_sigma_input = wx.SpinCtrlDouble(ctl_panel, min=0, max=100)
+        self.psf_sigma_input.SetValue(str(self.context.psf_sigma))
+        self.psf_sigma_input.Bind(wx.EVT_SPINCTRLDOUBLE, self.SetPSFSigma)
+        ctl_sizer.Add(self.psf_sigma_input, proportion=0, flag=wx.EXPAND | wx.ALL, border=10)
+
+        self.psf_snr_input = wx.SpinCtrlDouble(ctl_panel, min=0, max=100)
+        self.psf_snr_input.SetValue(str(self.context.psf_snr))
+        self.psf_snr_input.Bind(wx.EVT_SPINCTRLDOUBLE, self.SetPSFSNR)
+        ctl_sizer.Add(self.psf_snr_input, proportion=0, flag=wx.EXPAND | wx.ALL, border=10)
 
         build_mean_reference = wx.Button(ctl_panel, label="Build mean reference track")
         build_mean_reference.Bind(wx.EVT_BUTTON, self.BuildMeanReference)
@@ -104,10 +109,19 @@ class ReferenceTrackPanel(wx.Panel, IObserver):
         except Exception as e:
             pass
 
-    def SetPSF(self, event):
+    def SetPSFSigma(self, event):
         try:
-            value = self.psf_input.GetValue()
-            self.context.set_psf_width(value)
+            value = self.psf_sigma_input.GetValue()
+            self.context.set_psf_sigma(value)
+            self.context.build_mean_reference_track()
+            self.context.build_occultation_track()
+        except Exception as e:
+            pass
+
+    def SetPSFSNR(self, event):
+        try:
+            value = self.psf_snr_input.GetValue()
+            self.context.set_psf_snr(value)
             self.context.build_mean_reference_track()
             self.context.build_occultation_track()
         except Exception as e:
@@ -169,4 +183,4 @@ class ReferenceTrackPanel(wx.Panel, IObserver):
         self.UpdateImage()
         self.half_w_cut_input.SetValue(self.context.reference_half_w_cut)
         self.half_w_profile_input.SetValue(self.context.reference_half_w_profile)
-        self.psf_input.SetValue(self.context.psf_sigma)
+        self.psf_sigma_input.SetValue(self.context.psf_sigma)
