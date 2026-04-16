@@ -391,6 +391,10 @@ class DriftContext:
             "remove_sky" : self.remove_sky,
             "deconvolution" : self.deconvolution,
             "compensate_speed" : self.compensate_speed,
+            "psf" : {
+                "sigma" : self.psf_sigma,
+                "snr" : self.psf_snr,
+            }
         }
 
         self.occultation_profile, stats = drift_profile.calculate_true_drift_profile(occultation_profile_raw,
