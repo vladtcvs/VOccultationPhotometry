@@ -80,6 +80,7 @@ class DriftContext:
 
         # ---------- occultation slices ----------------
         self.occultation_slices : DriftSlice = None
+        self.occultation_side_slices : List[DriftSlice] = []
 
         # ---------- profiles --------------------------
         self.reference_profiles : List[DriftProfile] = []
@@ -393,17 +394,14 @@ class DriftContext:
                                          self.occultation_track.margin,
                                          0)
 
-        occultation_profile_raw = drift_slice.slices_to_profile(self.occultation_slices)
-
         # profiles parallel to track
-        side_profiles : List[DriftProfile] = []
+        self.occultation_side_slices = []
         for i in (-4,-2,2,4):
-            occultation_slices_offset = drift_slice.slice_track(self.occultation_track.gray,
-                                                                self.occultation_track.path,
-                                                                self.occultation_track.margin,
-                                                                i*self.occultation_track.path.half_w)
-            occ_profile_offset = drift_slice.slices_to_profile(occultation_slices_offset)
-            side_profiles.append(occ_profile_offset)
+            offsetes_slice = drift_slice.slice_track(self.occultation_track.gray,
+                                                     self.occultation_track.path,
+                                                     self.occultation_track.margin,
+                                                     i*self.occultation_track.path.half_w)
+            self.occultation_side_slices.append(offsetes_slice)
 
         # Restore true profile
 
@@ -417,8 +415,8 @@ class DriftContext:
             }
         }
 
-        self.occultation_profile, stats = drift_profile.calculate_true_drift_profile(occultation_profile_raw,
-                                                                                     side_profiles,
+        self.occultation_profile, stats = drift_profile.calculate_true_drift_profile(self.occultation_slices,
+                                                                                     self.occultation_side_slices,
                                                                                      self.mean_reference_profile,
                                                                                      params)
         for key in stats:

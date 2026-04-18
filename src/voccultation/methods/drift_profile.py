@@ -16,7 +16,7 @@ from typing import List, Tuple
 import numpy as np
 import math
 
-from voccultation.data_structures.data_containers import DriftProfile
+from voccultation.data_structures.data_containers import DriftProfile, DriftSlice
 from voccultation.methods.profile_deconvolution import wiener_deconvolution, generate_kernel
 
 def smooth_track_profile(profile : DriftProfile, smooth : int) -> np.ndarray:
@@ -111,8 +111,8 @@ def compensate_reference_profile(drift_profile : DriftProfile,
     return drift_profile
 
 
-def calculate_true_drift_profile(drift_profile : DriftProfile,
-                                 side_profiles : List[DriftProfile],
+def calculate_true_drift_profile(drift_slice : DriftSlice,
+                                 side_slices : List[DriftSlice],
                                  reference_profile : DriftProfile,
                                  params : dict) -> Tuple[DriftProfile, dict]:
     """
@@ -127,18 +127,19 @@ def calculate_true_drift_profile(drift_profile : DriftProfile,
     Returns:
         Tuple[DriftProfile, dict]: True drift profile and statistics
     """
-    L = drift_profile.length
-    for side_profile in side_profiles:
+    L = drift_slice.length
+    for side_profile in side_slices:
         assert side_profile.length==L
+    assert drift_slice.length == reference_profile.length
 
-    error = np.zeros((drift_profile.length,))
+    error = np.zeros((L,))
 
     # deconvolution
     if params["deconvolution"]:
         psf_sigma = params["psf"]["sigma"]
         if psf_sigma > 0:
             psf_snr = params["psf"]["snr"]
-            kernel = generate_kernel(psf_sigma, drift_profile.length)
+            kernel = generate_kernel(psf_sigma, drift_slice.width)
             drift_profile.profile = wiener_deconvolution(drift_profile.profile, kernel, psf_snr)
 
     # remove sky profile

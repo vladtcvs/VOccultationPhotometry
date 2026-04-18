@@ -12,30 +12,36 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 #
 
+
+from skimage import restoration
 import numpy as np
 
-def generate_kernel(sigma: float, size: int) -> np.ndarray:
+def generate_kernel(sigma: float, length : int, half_width: int) -> np.ndarray:
     """
-    Generate 1D Gaussian kernel
+    Generate 2D Gaussian kernel
 
     Parameters:
-        sigma (float): Standard deviation of the normal distribution.
-        size (int): Size of the generated kernel.
+        sigma (float): Standard deviation of the Gaussian kernel
+        length (int): Length of the kernel along the drift
+        half_width (int): Half-width of the kernel ortogonal to drift
+
     Returns:
         np.ndarray: Generated Gaussian kernel.
     """
-    x = np.linspace(-size//2, size//2 - 1, size)
-    print("X", x)
-    print("SIGMA", sigma)
-    kernel = np.exp(-((x / sigma)**2) / 2.0)
-    print("KERNEL ", kernel)
+    if length % 2 == 0:
+        length = length + 1
+
+    sigma = max(sigma, 0.5)
+    x = np.linspace(-length//2, length//2, length)
+    y = np.linspace(-half_width, half_width, 2*half_width + 1)
+    xv, yv = np.meshgrid(x, y, indexing='xy')
+    kernel = np.exp(-( (xv ** 2 + yv**2) / sigma**2) / 2.0)
+    kernel = kernel / np.sum(kernel)
     return kernel
-
-
 
 def wiener_deconvolution(blurred_data: np.ndarray, kernel: np.ndarray, snr: float) -> np.ndarray:
     """
-    Perform 1D Wiener deconvolution on blurred data.
+    Perform 2D Wiener deconvolution on blurred data.
 
     Parameters:
         blurred_data (np.ndarray): The blurred input data to be deconvolved.
@@ -45,28 +51,9 @@ def wiener_deconvolution(blurred_data: np.ndarray, kernel: np.ndarray, snr: floa
     Returns:
         np.ndarray: Deconvolved data.
     """
-    print("K", kernel.shape)
-    print("SNR", snr)
-    # Ensure kernel is normalized
-    kernel = kernel / np.sum(kernel)
+    deconvolved, _ = restoration.wiener(blurred_data, kernel, 0.1)
 
-    # Compute the Fourier transform of the kernel
-    kernel_fft = np.fft.fft(kernel, n=len(blurred_data))
 
-    # Compute the Wiener filter in frequency domain
-    # Wiener filter: H* / (|H|^2 + 1/SNR)
-    wiener_filter = np.conj(kernel_fft) / (np.abs(kernel_fft)**2 + 1/snr)
-
-    print("W = ", wiener_filter.shape)
-
-    # Apply the filter to the blurred data in frequency domain
-    blurred_fft = np.fft.fft(blurred_data)
-    deconvolved_fft = blurred_fft * wiener_filter
-
-    # Transform back to time domain
-    deconvolved_data = np.fft.ifft(deconvolved_fft).real
-
-    print("AAAAA", deconvolved_data.shape)
     return deconvolved_data
 
 def estimate_snr(star_track: np.ndarray, empty_tracks: np.ndarray) -> float:
@@ -113,3 +100,4 @@ def estimate_snr(star_track: np.ndarray, empty_tracks: np.ndarray) -> float:
         return np.mean(valid_snr)
     else:
         return 0.0
+

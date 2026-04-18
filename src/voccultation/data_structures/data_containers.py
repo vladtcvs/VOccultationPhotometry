@@ -239,7 +239,6 @@ class DriftProfile:
         plot_profile_with_error(w, h) -> np.ndarray: Plot the profile and its error.
     """
     def __init__(self, profile : np.ndarray, error : np.ndarray | None):
-        print(profile.shape)
         assert(len(profile.shape) == 1)
 
         self.profile = profile
