@@ -16,24 +16,20 @@
 from skimage import restoration
 import numpy as np
 
-def generate_kernel(sigma: float, length : int, half_width: int) -> np.ndarray:
+def generate_kernel(sigma: float, half_width: int) -> np.ndarray:
     """
     Generate 2D Gaussian kernel
 
     Parameters:
         sigma (float): Standard deviation of the Gaussian kernel
-        length (int): Length of the kernel along the drift
         half_width (int): Half-width of the kernel ortogonal to drift
 
     Returns:
         np.ndarray: Generated Gaussian kernel.
     """
-    if length % 2 == 0:
-        length = length + 1
-
     sigma = max(sigma, 0.5)
-    x = np.linspace(-length//2, length//2, length)
     y = np.linspace(-half_width, half_width, 2*half_width + 1)
+    x = np.linspace(-half_width, half_width, 2*half_width + 1)
     xv, yv = np.meshgrid(x, y, indexing='xy')
     kernel = np.exp(-( (xv ** 2 + yv**2) / sigma**2) / 2.0)
     kernel = kernel / np.sum(kernel)
@@ -44,17 +40,38 @@ def wiener_deconvolution(blurred_data: np.ndarray, kernel: np.ndarray, snr: floa
     Perform 2D Wiener deconvolution on blurred data.
 
     Parameters:
-        blurred_data (np.ndarray): The blurred input data to be deconvolved.
-        kernel (np.ndarray): The convolution kernel (point spread function).
+        blurred_data (np.ndarray): 2-D blurred input data to be deconvolved.
+        kernel (np.ndarray): 2-D convolution kernel (point spread function).
         snr (float): Signal-to-noise ratio for Wiener filtering.
 
     Returns:
         np.ndarray: Deconvolved data.
     """
-    deconvolved, _ = restoration.wiener(blurred_data, kernel, 0.1)
+    slice_length = blurred_data.shape[0]
+    slice_width = blurred_data.shape[1]
+    kernel_length = kernel.shape[0]
+    kernel_width = kernel.shape[1]
+    print(f"Deconvolution. Slices {slice_length}x{slice_width}, kernel {kernel_length}x{kernel_width}")
+    assert kernel_width <= slice_width
+    assert kernel_length <= slice_width
+    pad_length = (slice_length - kernel_length)//2
+    pad_width = (slice_width - kernel_width)//2
+    kernel_padded = np.zeros(blurred_data.shape)
+    kernel_padded[pad_length:pad_length+kernel_length,pad_width:pad_width+kernel_width] = kernel
 
+    kernel_fft = np.fft.fft2(kernel_padded)
+    kernel_fft = np.fft.fftshift(kernel_fft)
+    kernel_fft_conj = np.conj(kernel_fft)
+    wiener = kernel_fft_conj / (kernel_fft * kernel_fft_conj + 1/snr)
 
-    return deconvolved_data
+    blurred_fft = np.fft.fft2(blurred_data)
+    blurred_fft = np.fft.fftshift(blurred_fft)
+
+    deconvolved_fft = blurred_fft * wiener
+    deconvolved_fft = np.fft.ifftshift(deconvolved_fft)
+    deconvolved_data = np.fft.ifft2(deconvolved_fft)
+
+    return np.real(deconvolved_data)
 
 def estimate_snr(star_track: np.ndarray, empty_tracks: np.ndarray) -> float:
     """

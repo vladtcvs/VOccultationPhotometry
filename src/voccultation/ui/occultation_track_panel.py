@@ -40,6 +40,10 @@ class OccultationTrackPanel(wx.Panel, IObserver):
         self.track_slices_ctrl = wx.StaticBitmap(track_box, wx.ID_ANY, wx.Bitmap(linear_track_img))
         track_sizer.Add(self.track_slices_ctrl, proportion=1, flag=wx.EXPAND | wx.ALL, border=4)
 
+        processed_track_img = wx.Image(480, 40)
+        self.processed_track_slices_ctrl = wx.StaticBitmap(track_box, wx.ID_ANY, wx.Bitmap(processed_track_img))
+        track_sizer.Add(self.processed_track_slices_ctrl, proportion=1, flag=wx.EXPAND | wx.ALL, border=4)
+
         # track plot panel
         plot_box = wx.StaticBox(self, wx.ID_ANY, label='Plot')
         plot_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -68,10 +72,18 @@ class OccultationTrackPanel(wx.Panel, IObserver):
         label = wx.StaticText(ctl_panel, label="Track half width:")
         ctl_sizer.Add(label, proportion=0, flag=wx.EXPAND | wx.ALL, border=10)
 
-        self.half_w_input = wx.SpinCtrl(ctl_panel, min=1, max=100)
-        self.half_w_input.SetValue(str(self.context.occultation_half_w))
-        self.half_w_input.Bind(wx.EVT_SPINCTRL, self.SetOccHalfW)
-        ctl_sizer.Add(self.half_w_input, proportion=0, flag=wx.EXPAND | wx.ALL, border=10)
+        self.half_w_cut_input = wx.SpinCtrl(ctl_panel, min=1, max=100)
+        self.half_w_cut_input.SetValue(str(self.context.occultation_half_w_cut))
+        self.half_w_cut_input.Bind(wx.EVT_SPINCTRL, self.SetOccHalfW_Cut)
+        ctl_sizer.Add(self.half_w_cut_input, proportion=0, flag=wx.EXPAND | wx.ALL, border=10)
+
+        label = wx.StaticText(ctl_panel, label="Track half width (used for profile):")
+        ctl_sizer.Add(label, proportion=0, flag=wx.EXPAND | wx.ALL, border=10)
+
+        self.half_w_profile_input = wx.SpinCtrl(ctl_panel, min=1, max=100)
+        self.half_w_profile_input.SetValue(str(self.context.occultation_half_w_profile))
+        self.half_w_profile_input.Bind(wx.EVT_SPINCTRL, self.SetOccHalfW_Profile)
+        ctl_sizer.Add(self.half_w_profile_input, proportion=0, flag=wx.EXPAND | wx.ALL, border=10)
 
         label = wx.StaticText(ctl_panel, label="Track PSF:")
         ctl_sizer.Add(label, proportion=0, flag=wx.EXPAND | wx.ALL, border=10)
@@ -106,10 +118,18 @@ class OccultationTrackPanel(wx.Panel, IObserver):
     def Deconvolution(self, event : wx.CommandEvent):
         self.context.deconvolution = event.IsChecked()
 
-    def SetOccHalfW(self, event : wx.CommandEvent):
+    def SetOccHalfW_Cut(self, event : wx.CommandEvent):
         try:
-            value = self.half_w_input.GetValue()
-            self.context.set_occultation_half_w(value)
+            value = self.half_w_cut_input.GetValue()
+            self.context.set_occultation_half_w_cut(value)
+            self.context.build_occultation_track()
+        except Exception as e:
+            pass
+
+    def SetOccHalfW_Profile(self, event : wx.CommandEvent):
+        try:
+            value = self.half_w_profile_input.GetValue()
+            self.context.set_occultation_half_w_profile(value)
             self.context.build_occultation_track()
         except Exception as e:
             pass
@@ -161,6 +181,15 @@ class OccultationTrackPanel(wx.Panel, IObserver):
             self.track_slices_ctrl.SetBitmap(gray_bitmap)
             self.track_slices_ctrl.Refresh()
 
+        if self.context.occultation_slices_processed_image is not None:
+            height, width = self.context.occultation_slices_processed_image.shape[:2]
+            data = self.context.occultation_slices_processed_image.tobytes()
+            image = wx.Image(width, height)
+            image.SetData(data)
+            gray_bitmap = image.ConvertToBitmap()
+            self.processed_track_slices_ctrl.SetBitmap(gray_bitmap)
+            self.processed_track_slices_ctrl.Refresh()
+
         if self.context.occultation_plot is not None:
             height, width = self.context.occultation_plot.shape[:2]
             data = self.context.occultation_plot.tobytes()
@@ -194,5 +223,6 @@ class OccultationTrackPanel(wx.Panel, IObserver):
 
     def notify(self):
         self.UpdateImage()
-        self.half_w_input.SetValue(self.context.occultation_half_w)
+        self.half_w_cut_input.SetValue(self.context.occultation_half_w_cut)
+        self.half_w_profile_input.SetValue(self.context.occultation_half_w_profile)
         self.psf_sigma_input.SetValue(self.context.psf_sigma)

@@ -194,10 +194,12 @@ class DriftSlice:
     """
     def __init__(self, slices : np.ndarray):
         assert len(slices.shape) == 2
-
+        assert slices.shape[1] % 2 == 1
         self.slices = slices
-        self.length = self.slices.shape[0] 
+        self.length = self.slices.shape[0]
         self.width = self.slices.shape[1]
+        self.half_width = self.width//2
+        assert self.width == self.half_width*2 + 1
         self.mask = 1-np.isnan(self.slices)
         self.slices[np.where(np.isnan(self.slices))] = 0
 

@@ -16,6 +16,8 @@ from typing import List, Tuple
 import numpy as np
 import math
 
+import voccultation.methods.drift_slice
+
 from voccultation.data_structures.data_containers import DriftProfile, DriftSlice
 from voccultation.methods.profile_deconvolution import wiener_deconvolution, generate_kernel
 
@@ -111,10 +113,10 @@ def compensate_reference_profile(drift_profile : DriftProfile,
     return drift_profile
 
 
-def calculate_true_drift_profile(drift_slice : DriftSlice,
-                                 side_slices : List[DriftSlice],
-                                 reference_profile : DriftProfile,
-                                 params : dict) -> Tuple[DriftProfile, dict]:
+def calculate_drift_profile(drift_slices : DriftSlice,
+                            side_slices : List[DriftSlice],
+                            reference_profile : DriftProfile,
+                            params : dict) -> Tuple[DriftProfile, dict]:
     """
     Calculates the true drift profile.
 
@@ -127,31 +129,40 @@ def calculate_true_drift_profile(drift_slice : DriftSlice,
     Returns:
         Tuple[DriftProfile, dict]: True drift profile and statistics
     """
-    L = drift_slice.length
+    L = drift_slices.length
     for side_profile in side_slices:
         assert side_profile.length==L
-    assert drift_slice.length == reference_profile.length
+    assert drift_slices.length == reference_profile.length
 
     error = np.zeros((L,))
+
+    drift_slice_slices = drift_slices.slices
 
     # deconvolution
     if params["deconvolution"]:
         psf_sigma = params["psf"]["sigma"]
         if psf_sigma > 0:
             psf_snr = params["psf"]["snr"]
-            kernel = generate_kernel(psf_sigma, drift_slice.width)
-            drift_profile.profile = wiener_deconvolution(drift_profile.profile, kernel, psf_snr)
+            print(f"Perform deconvolution, PSF sigma={psf_sigma}, SNR={psf_snr}")
+            kernel = generate_kernel(psf_sigma, drift_slices.half_width)
+            drift_slice_slices = wiener_deconvolution(drift_slice_slices, kernel, psf_snr)
 
     # remove sky profile
-    if params["remove_sky"]:
-        # average sky profile parallel to occ profile
-        sky_profile = calculate_sky_profile(side_profiles)
-        drift_profile.profile = drift_profile.profile - sky_profile.profile
+    #if params["remove_sky"]:
+    #    # average sky profile parallel to occ profile
+    #    sky_profile = calculate_sky_profile(side_profiles)
+    #    drift_profile.profile = drift_profile.profile - sky_profile.profile
 
     # estimate errors
-    smoothed = smooth_track_profile(drift_profile, 3)
-    delta = np.sqrt(np.sum((smoothed - drift_profile.profile)**2)/L)
-    mean = np.mean(drift_profile.profile)
+    #smoothed = smooth_track_profile(drift_profile, 3)
+    #delta = np.sqrt(np.sum((smoothed - drift_profile.profile)**2)/L)
+    #mean = np.mean(drift_profile.profile)
+
+    slices = DriftSlice(drift_slice_slices)
+    drift_profile = voccultation.methods.drift_slice.slices_to_profile(slices)
+
+    mean = 0
+    delta = 0
     stats = {
         "mean" : mean,
         "stdev" : delta,
