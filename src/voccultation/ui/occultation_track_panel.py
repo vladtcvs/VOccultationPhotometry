@@ -172,9 +172,9 @@ class OccultationTrackPanel(wx.Panel, IObserver):
             self.track_image_ctrl.SetBitmap(gray_bitmap)
             self.track_image_ctrl.Refresh()
 
-        if self.context.occultation_slices_image is not None:
-            height, width = self.context.occultation_slices_image.shape[:2]
-            data = self.context.occultation_slices_image.tobytes()
+        if self.context.occultation_slices_raw_image is not None:
+            height, width = self.context.occultation_slices_raw_image.shape[:2]
+            data = self.context.occultation_slices_raw_image.tobytes()
             image = wx.Image(width, height)
             image.SetData(data)
             gray_bitmap = image.ConvertToBitmap()

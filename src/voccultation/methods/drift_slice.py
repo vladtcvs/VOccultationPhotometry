@@ -165,6 +165,9 @@ def slice_track(track_image : np.ndarray,
         slices[i,:] = track_slice
     return DriftSlice(slices)
 
+def slice_deconvolution(slices : DriftSlice, psf_sigma : float, snr : float) -> DriftSlice:
+    return slices
+
 def slices_to_profile(slices : DriftSlice, used_half_w : int | None) -> DriftProfile:
     """
     Converts a slice to a profile.
