@@ -12,9 +12,8 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 #
 
-from typing import List, Tuple
+from typing import List
 import numpy as np
-import math
 
 from voccultation.data_structures.data_containers import DriftProfile
 
