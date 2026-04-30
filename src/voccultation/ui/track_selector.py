@@ -14,46 +14,59 @@
 
 import wx
 import wx.lib.newevent
+import uuid
 
-TrackSelectedEventType, EVT_TRACK_SELECTED = wx.lib.newevent.NewCommandEvent()
+# Define custom event types
+OccultationPressedEvent, EVT_OCCULTATION_TRACK_PRESSED = wx.lib.newevent.NewEvent()
+ReferencePressedEvent, EVT_REFERENCE_TRACK_PRESSED = wx.lib.newevent.NewEvent()
+RemoveTrackPressedEvent, EVT_REMOVE_TRACK_PRESSED = wx.lib.newevent.NewEvent()
 
-class TrackSelectedEvent(wx.PyCommandEvent):
-    eventType = TrackSelectedEventType
-    def __init__(self, windowID, track):
-        wx.PyCommandEvent(self, self.eventType, windowID)
-        self.SetEventObject(track)
-
-TrackRemoveClickedEventType, EVT_TRACK_REMOVE_CLICKED = wx.lib.newevent.NewCommandEvent()
-class TrackRemoveClickedEvent(wx.PyCommandEvent):
-    eventType = TrackRemoveClickedEventType
-    def __init__(self, windowID, track):
-        wx.PyCommandEvent(self, self.eventType, windowID)
-        self.SetEventObject(track)
-
-NewTrackClickedEventType, EVT_NEW_TRACK_CLICKED = wx.lib.newevent.NewCommandEvent()
-class TrackRemoveClickedEvent(wx.PyCommandEvent):
-    eventType = NewTrackClickedEventType
-    def __init__(self, windowID):
-        wx.PyCommandEvent(self, self.eventType, windowID)
-
-class TrackSelectionPanel(wx.Panel):
+class TrackSelector(wx.Panel):
     def __init__(self, parent):
-        wx.Panel.__init__(self, parent)
-        self.current_idx = None
-        self.objects = []
+        super().__init__(parent)
+        self.sizer = wx.BoxSizer(wx.VERTICAL)
+        self.occultation_button = wx.Button(self, label="Occultation track")
+        self.sizer.Add(self.occultation_button, proportion=0, flag=wx.ALL, border=8)
+        self.reference_tracks = {}  # GUID -> (btn_ref, btn_remove, h_sizer)
+        self.Bind(wx.EVT_BUTTON, self.on_occultation_pressed, self.occultation_button)
+        self.SetSizer(self.sizer)
+
+    def on_occultation_pressed(self, event):
+        wx.PostEvent(self, OccultationPressedEvent())
+
+    def add_new_reference_track(self):
+        guid = str(uuid.uuid4())
+        h_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        btn_ref = wx.Button(self, label="Reference track")
+        btn_remove = wx.Button(self, label="X")
+        h_sizer.Add(btn_ref, proportion=0, flag=wx.ALL, border=8)
+        h_sizer.Add(btn_remove, proportion=0, flag=wx.ALL, border=8)
+        self.sizer.Add(h_sizer, proportion=0, flag=wx.ALL, border=0)
+        self.reference_tracks[guid] = (btn_ref, btn_remove, h_sizer)
+        self.Bind(wx.EVT_BUTTON, lambda e: self.on_reference_pressed(e, guid), btn_ref)
+        self.Bind(wx.EVT_BUTTON, lambda e: self.on_remove_pressed(e, guid), btn_remove)
+        self.Layout()
+        return guid
+
+    def on_reference_pressed(self, event, guid):
+        evt = ReferencePressedEvent(guid=guid)
+        wx.PostEvent(self, evt)
+
+    def on_remove_pressed(self, event, guid):
+        evt = RemoveTrackPressedEvent(guid=guid)
+        wx.PostEvent(self, evt)
+
+    def remove_reference_track(self, guid):
+        if guid in self.reference_tracks:
+            btn_ref, btn_remove, h_sizer = self.reference_tracks[guid]
+            self.Unbind(wx.EVT_BUTTON, btn_ref)
+            self.Unbind(wx.EVT_BUTTON, btn_remove)
+            self.sizer.Remove(h_sizer)
+            btn_ref.Destroy()
+            btn_remove.Destroy()
+            del self.reference_tracks[guid]
+            self.Layout()
 
     def clear(self):
-        self.objects = []
-
-    def get_current_track(self) -> object:
-        pass
-
-    def add_new_track(self, object, is_removable : bool):
-        pass
-
-    def remove_track(self, object):
-        pass
-
-
-    def on_new_track_clicked(self, evt):
-        wx.PostEvent()
+        for guid in list(self.reference_tracks.keys()):
+            self.remove_reference_track(guid)

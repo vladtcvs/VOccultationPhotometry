@@ -17,6 +17,7 @@ import wx.lib.scrolledpanel as scrolled
 
 from voccultation.model.data_context import DriftContext, IObserver
 from voccultation.ui.navigation_panel import NavigationPanel
+from voccultation.ui.track_selector import EVT_OCCULTATION_TRACK_PRESSED, EVT_REFERENCE_TRACK_PRESSED, EVT_REMOVE_TRACK_PRESSED, TrackSelector
 
 class DetectTracksPanel(wx.Panel, IObserver):
     def __init__(self, parent, context : DriftContext, status : wx.StaticText):
@@ -64,11 +65,33 @@ class DetectTracksPanel(wx.Panel, IObserver):
         ctl_sizer.Add(navigator, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALL, border=10)
 
         # Tracks
-        occ_track_select = wx.Button(ctl_panel, label="Occultation track")
-        occ_track_select.Bind(wx.EVT_BUTTON, self.selectOccultation)
-        ctl_sizer.Add(occ_track_select, proportion=0, flag=wx.EXPAND | wx.ALL, border=10)
+        self.track_selector = TrackSelector(ctl_panel)
+        self.track_selector.Bind(EVT_REMOVE_TRACK_PRESSED, self.RemoveReference)
+        self.track_selector.Bind(EVT_OCCULTATION_TRACK_PRESSED, self.SelectOccultation)
+        self.track_selector.Bind(EVT_REFERENCE_TRACK_PRESSED, self.SelectReference)
+        ctl_sizer.Add(self.track_selector,  0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALL, border=10)
+
+        add_new_reference = wx.Button(ctl_panel, label="New reference")
+        add_new_reference.Bind(wx.EVT_BUTTON, self.AddNewReference)
+        ctl_sizer.Add(add_new_reference, proportion=0, flag=wx.EXPAND | wx.ALL, border=10)
+
 
         main_sizer.Add(ctl_panel, proportion=0, flag=wx.ALL | wx.ALIGN_CENTER_VERTICAL, border=8)
+
+    def SelectReference(self, event):
+        guid = event.guid
+
+    def SelectOccultation(self, event):
+        pass
+
+    def RemoveReference(self, event):
+        guid = event.guid
+        self.track_selector.remove_reference_track(guid)
+        self.Layout()
+
+    def AddNewReference(self, event):
+        guid = self.track_selector.add_new_reference_track()
+        self.Layout()
 
     def selectOccultation(self, event):
         self.active_occultation_track = True
