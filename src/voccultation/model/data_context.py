@@ -34,6 +34,8 @@ class DriftContext:
         """
         self.observers : List[IObserver] = []
 
+        self.labels = []
+
         # original frame
         self.gray : np.ndarray = None
 
@@ -79,6 +81,9 @@ class DriftContext:
         self.occultation_ctx.specify_track_pos(w//2, h//2)
         self.rgb = cv2.cvtColor(self.gray.astype(np.uint8), cv2.COLOR_GRAY2RGB)
         self.notify_observers()
+
+    def save_labels(self, labels : List[str]):
+        self.labels = labels
 
     def set_reference_half_w_cut(self, half_w : int):
         """
@@ -130,7 +135,7 @@ class DriftContext:
 
         self.rgb = cv2.cvtColor(self.gray.astype(np.uint8), cv2.COLOR_GRAY2RGB)
         # draw reference track line on each of reference tracks on original image
-        for reference_track_rect in self.reference_ctx.track_rects:
+        for idx, reference_track_rect in enumerate(self.reference_ctx.track_rects):
                 # draw track
                 if self.reference_ctx.mean_track is not None:
                     reference_track_area, _ = reference_track_rect.extract_track(self.gray, 0)
@@ -144,6 +149,11 @@ class DriftContext:
                                                   (255,0,0),
                                                   (0,200,0),
                                                   0.5)
+
+                    if idx < len(self.labels):
+                        x0 = reference_track_rect.left - 15
+                        y0 = reference_track_rect.top - 2
+                        cv2.putText(self.rgb, self.labels[idx], (x0, y0), cv2.FONT_HERSHEY_PLAIN, 1, (255, 0, 0))
 
                 # draw bounding rectangle
                 cv2.rectangle(self.rgb, (reference_track_rect.left, reference_track_rect.top),

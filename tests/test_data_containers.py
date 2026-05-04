@@ -151,7 +151,6 @@ class TestDriftSlice:
         rgb = ds.plot_slices(100, 100)
         assert rgb.shape == (100, 100, 3)
 
-
 class TestDriftProfile:
     def test_init_valid(self):
         profile = np.random.rand(10).astype(np.float32)

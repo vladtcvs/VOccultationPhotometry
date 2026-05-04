@@ -22,6 +22,34 @@ ReferencePressedEvent, EVT_REFERENCE_TRACK_PRESSED = wx.lib.newevent.NewEvent()
 RemoveTrackPressedEvent, EVT_REMOVE_TRACK_PRESSED = wx.lib.newevent.NewEvent()
 TracksUpdated, EVT_TRACKS_UPDATED = wx.lib.newevent.NewEvent()
 
+class LabelManager:
+    def __init__(self):
+        self.guids = {}
+
+    def clear(self):
+        self.guids.clear()
+
+    def add_new_guid(self, guid : str) -> str:
+        if guid in self.guids:
+            return str(self.guids[guid])
+
+        newid = len(self.guids)+1
+        self.guids[guid] = newid
+        return f"#{newid}"
+
+    def remove_guid(self, guid : str):
+        if guid not in self.guids:
+            return
+
+        id = self.guids[guid]
+        for guid_it in self.guids.keys():
+            if self.guids[guid_it] > id:
+                self.guids[guid_it] -= 1
+        del self.guids[guid]
+
+    def guid_label(self, guid : str) -> str:
+        return f"#{self.guids[guid]}"
+
 class TrackSelector(wx.Panel):
     def __init__(self, parent):
         super().__init__(parent)
@@ -30,7 +58,7 @@ class TrackSelector(wx.Panel):
         self.occultation_button = wx.Button(self, label="Occultation track")
         self.sizer.Add(self.occultation_button, proportion=0, flag=wx.ALL, border=8)
         self.reference_tracks = {}  # GUID -> (btn_ref, btn_remove, h_sizer)
-        self.reference_track_ids = {} # GUID -> id
+        self.track_labels = LabelManager()
         self.Bind(wx.EVT_BUTTON, self.on_occultation_pressed, self.occultation_button)
         self.SetSizer(self.sizer)
 
@@ -86,15 +114,14 @@ class TrackSelector(wx.Panel):
     def add_new_reference_track(self):
         guid = str(uuid.uuid4())
         h_sizer = wx.BoxSizer(wx.HORIZONTAL)
-        new_id = len(self.reference_tracks) + 1
-        btn_ref = wx.Button(self, label=f"Reference track #{new_id}")
+        new_label = self.track_labels.add_new_guid(guid)
+        btn_ref = wx.Button(self, label=f"Reference track {new_label}")
         btn_ref.SetBitmapLabel(self.non_active_bmp)
         btn_remove = wx.Button(self, label="X")
         h_sizer.Add(btn_ref, proportion=0, flag=wx.ALL, border=8)
         h_sizer.Add(btn_remove, proportion=0, flag=wx.ALL, border=8)
         self.sizer.Add(h_sizer, proportion=0, flag=wx.ALL, border=0)
         self.reference_tracks[guid] = (btn_ref, btn_remove, h_sizer)
-        self.reference_track_ids[guid] = new_id
         self.Bind(wx.EVT_BUTTON, lambda e: self.on_reference_pressed(e, guid), btn_ref)
         self.Bind(wx.EVT_BUTTON, lambda e: self.on_remove_pressed(e, guid), btn_remove)
         self.Layout()
@@ -121,13 +148,13 @@ class TrackSelector(wx.Panel):
             btn_ref.Destroy()
             btn_remove.Destroy()
             del self.reference_tracks[guid]
-            del self.reference_track_ids[guid]
-            id = 1
-            for guid_it in self.reference_track_ids:
-                self.reference_track_ids[guid_it] = id
+
+            self.track_labels.remove_guid(guid)
+            for guid_it in self.reference_tracks:
+                label = self.track_labels.guid_label(guid_it)
                 btn_ref : wx.Button = self.reference_tracks[guid_it][0]
-                btn_ref.SetLabel(f"Reference Track #{id}")
-                id += 1
+                btn_ref.SetLabel(f"Reference Track {label}")
+
             if self.active_guid == guid:
                 self.active_guid = None
                 self.select_occultation_track()
@@ -144,7 +171,7 @@ class TrackSelector(wx.Panel):
             btn_ref.Destroy()
             btn_remove.Destroy()
         self.reference_tracks.clear()
-        self.reference_track_ids.clear()
+        self.track_labels.clear()
         self.Layout()
         evt = TracksUpdated()
         wx.PostEvent(self, evt)

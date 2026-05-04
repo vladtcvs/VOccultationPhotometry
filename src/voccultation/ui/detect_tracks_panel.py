@@ -12,6 +12,7 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 #
 
+from typing import Dict, List
 import wx
 import wx.lib.scrolledpanel as scrolled
 
@@ -30,6 +31,9 @@ class DetectTracksPanel(wx.Panel, IObserver):
 
         main_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.SetSizer(main_sizer)
+
+        self.guids : List[str] = []
+        self.indexes : Dict[str, int] = {}
 
         # Image panel
         image_box = wx.StaticBox(self, wx.ID_ANY, label='Image')
@@ -81,9 +85,12 @@ class DetectTracksPanel(wx.Panel, IObserver):
 
     def SelectReference(self, event):
         guid = event.guid
+        self.active_occultation_track = False
+        self.active_reference_track = self.indexes[guid]
 
     def SelectOccultation(self, event):
-        pass
+        self.active_occultation_track = True
+        self.active_reference_track = None
 
     def RemoveReference(self, event):
         guid = event.guid
@@ -96,9 +103,6 @@ class DetectTracksPanel(wx.Panel, IObserver):
     def AddNewReference(self, event):
         guid = self.track_selector.add_new_reference_track()
         self.Layout()
-
-    def selectOccultation(self, event):
-        self.active_occultation_track = True
 
     def _get_img_crds(self, event):
         x, y = event.GetPosition()
@@ -133,31 +137,49 @@ class DetectTracksPanel(wx.Panel, IObserver):
             self.context.display_tracks()
 
     def navigate(self, dx, dy):
-        x, y = self.occultation_track_position()
-        x, y = (x + dx, y + dy)
-        self.context.specify_occultation_track(x, y)
+        if self.active_occultation_track:
+            x, y = self.occultation_track_position()
+            x, y = (x + dx, y + dy)
+            self.context.specify_occultation_track(x, y)
+        else:
+            x, y = self.reference_track_position(self.active_reference_track)
+            x, y = (x + dx, y + dy)
+            self.specify_reference_track(self.active_reference_track, x, y)
         self.context.display_tracks()
-
-    def init_occultation_track_position(self):
-        if self.context.gray is None:
-            return
-        w = self.context.gray.shape[1]
-        h = self.context.gray.shape[0]
-        rw = self.context.reference_ctx.mean_track.gray.shape[1]
-        rh = self.context.reference_ctx.mean_track.gray.shape[0]
-        y = int(h/2-rh/2)
-        x = int(w/2-rw/2)
-        self.context.occultation_track_pos = (y, x)
 
     def occultation_track_position(self):
         x = self.context.occultation_ctx.track_pos[1]
         y = self.context.occultation_ctx.track_pos[0]
         return x, y
 
+    def reference_track_position(self, idx : int):
+        x = self.context.reference_ctx.track_rects[idx].left
+        y = self.context.reference_ctx.track_rects[idx].top
+        return x, y
+
+    def specify_reference_track(self, idx : int, x : int, y : int):
+        self.context.reference_ctx.track_rects[idx].specify_position(x, y)
+
+
     def AutoDetectTracks(self, event):
+        self.track_selector.clear()
         self.context.detect_tracks()
+        self.guids.clear()
+        for idx, track in enumerate(self.context.reference_ctx.track_rects):
+            guid = self.track_selector.add_new_reference_track()
+            self.guids.append(guid)
+
+        labels = []
+        for idx, track in enumerate(self.context.reference_ctx.track_rects):
+            guid = self.guids[idx]
+            self.indexes[guid] = idx
+            label = self.track_selector.track_labels.guid_label(guid)
+            labels.append(label)
+
+        self.Layout()
+        self.context.save_labels(labels)
         self.context.build_mean_reference_track()
-        self.init_occultation_track_position()
+
         x, y = self.occultation_track_position()
         self.context.specify_occultation_track(x, y)
         self.context.build_occultation_track()
