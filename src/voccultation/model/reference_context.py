@@ -48,6 +48,20 @@ class MeanReferenceTrackContext:
         if guid in self.labels:
             del self.labels[guid]
 
+    def add_new_track(self, guid : str, label : str):
+        if len(self.track_rects) == 0:
+            w = 50
+            h = 50
+        else:
+            guid0 = list(self.track_rects.keys())[0]
+            w = self.track_rects[guid0].w
+            h = self.track_rects[guid0].h
+        imgcx = self.gray.shape[1]//2
+        imgcy = self.gray.shape[0]//2
+        rect = DriftTrackRect(imgcx-w//2, imgcx-w//2+w-1, imgcy-h//2, imgcy-h//2+h-1)
+        self.track_rects[guid] = rect
+        self.labels[guid] = label
+
     def reset_labels(self):
         self.labels.clear()
 

@@ -160,6 +160,7 @@ class TrackSelector(wx.Panel):
                 self.active_guid = None
                 self.select_occultation_track()
             self.Layout()
+            wx.PostEvent(self, OccultationPressedEvent())
             evt = TracksUpdated()
             wx.PostEvent(self, evt)
 

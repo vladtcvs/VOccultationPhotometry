@@ -77,7 +77,6 @@ class DetectTracksPanel(wx.Panel, IObserver):
         add_new_reference.Bind(wx.EVT_BUTTON, self.AddNewReference)
         ctl_sizer.Add(add_new_reference, proportion=0, flag=wx.EXPAND | wx.ALL, border=10)
 
-
         main_sizer.Add(ctl_panel, proportion=0, flag=wx.ALL | wx.ALIGN_CENTER_VERTICAL, border=8)
 
     def SelectReference(self, event):
@@ -103,6 +102,8 @@ class DetectTracksPanel(wx.Panel, IObserver):
 
     def AddNewReference(self, event):
         guid = self.track_selector.add_new_reference_track()
+        label = self.track_selector.track_labels.guid_label(guid)
+        self.context.reference_ctx.add_new_track(guid, label)
         self.Layout()
 
     def _get_img_crds(self, event):
