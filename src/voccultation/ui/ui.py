@@ -97,6 +97,7 @@ class DriftWindow(wx.Frame):
             try:
                 gray = np.array(Image.open(pathname).convert('L'))
                 self.context.set_image(gray)
+                self.detectTracksPanel.track_selector.clear()
             except IOError:
                 wx.LogError("Cannot open file '%s'." % pathname)
 

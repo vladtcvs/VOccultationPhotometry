@@ -33,6 +33,7 @@ class MeanReferenceTrackContext:
         """Reset the context, clearing any stored data."""
         self.half_w_profile = 5
         self.half_w_cut = 15
+        self.smooth = 1
         self.track_orientation : TrackOrientation = None
         self.update_margin()
         self.clear_reference_tracks()
@@ -156,7 +157,8 @@ class MeanReferenceTrackContext:
         ref_track_area, ref_path = build_mean_reference_track(self.gray,
                                                               list(self.track_rects.values()),
                                                               self.half_w_cut,
-                                                              self.track_orientation)
+                                                              self.track_orientation,
+                                                              self.smooth)
 
         ref_normals = drift_slice.build_track_normals(ref_path.points)
         ref_path = DriftTrackPath(ref_path.points,

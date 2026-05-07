@@ -86,7 +86,7 @@ def _mean_track_to_points(track : np.ndarray,
 
     return np.array(points), orientation
 
-def _smooth_track_points(points : np.ndarray, orientation : TrackOrientation) -> np.ndarray:
+def _smooth_track_points(points : np.ndarray, orientation : TrackOrientation, smooth : int) -> np.ndarray:
     """
     Smooth a list of track points.
 
@@ -97,7 +97,6 @@ def _smooth_track_points(points : np.ndarray, orientation : TrackOrientation) ->
     Returns:
         np.ndarray: Smoothed list of track points.
     """
-    hw = 2
     L = points.shape[0]
     if orientation == TrackOrientation.TRACK_VERTICAL:
         index = 1
@@ -108,7 +107,7 @@ def _smooth_track_points(points : np.ndarray, orientation : TrackOrientation) ->
     for x in range(L):
         s = 0
         num = 0
-        for y in range(x-hw,x+hw+1):
+        for y in range(x-smooth,x+smooth+1):
             if y < 0 or y >= L:
                 continue
             s += points[y, index]
@@ -120,7 +119,8 @@ def _smooth_track_points(points : np.ndarray, orientation : TrackOrientation) ->
 def build_mean_reference_track(gray : np.ndarray,
                                references : List[DriftTrackRect],
                                margin : int,
-                               orientation : TrackOrientation | None) -> Tuple[np.ndarray, DriftTrackPath]:
+                               orientation : TrackOrientation | None,
+                               smooth : int) -> Tuple[np.ndarray, DriftTrackPath]:
     """
     Build reference track image from a list of tracks.
 
@@ -134,6 +134,7 @@ def build_mean_reference_track(gray : np.ndarray,
     """
     track = mean_track(references, gray, margin)
     points, orientation = _mean_track_to_points(track, margin, orientation)
-    points = _smooth_track_points(points, orientation)
+    if smooth != 0:
+        points = _smooth_track_points(points, orientation, smooth)
     path = DriftTrackPath(points, None, None)
     return (track, path)

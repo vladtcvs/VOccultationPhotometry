@@ -70,6 +70,14 @@ class ReferenceTrackPanel(wx.Panel, IObserver):
         self.track_orientation_group.Bind(wx.EVT_RADIOBOX, self.SelectOrientation)
         ctl_sizer.Add(self.track_orientation_group, flag=wx.ALL | wx.EXPAND, border=4)
 
+        label = wx.StaticText(ctl_panel, label="Reference track smooth:")
+        ctl_sizer.Add(label, proportion=0, flag=wx.EXPAND | wx.ALL, border=10)
+
+        self.smooth_input = wx.SpinCtrl(ctl_panel, min=0, max=3)
+        self.smooth_input.SetValue(str(self.context.reference_ctx.smooth))
+        self.smooth_input.Bind(wx.EVT_SPINCTRL, self.SetSmooth)
+        ctl_sizer.Add(self.smooth_input, proportion=0, flag=wx.EXPAND | wx.ALL, border=10)
+
         label = wx.StaticText(ctl_panel, label="Reference track half width:")
         ctl_sizer.Add(label, proportion=0, flag=wx.EXPAND | wx.ALL, border=10)
 
@@ -99,6 +107,14 @@ class ReferenceTrackPanel(wx.Panel, IObserver):
         ctl_sizer.Add(save_reference_slices, proportion=0, flag=wx.EXPAND | wx.ALL, border=10)
 
         main_sizer.Add(ctl_panel, proportion=0, flag=wx.ALL | wx.ALIGN_CENTER_VERTICAL, border=8)
+
+    def SetSmooth(self, event):
+        try:
+            value = self.smooth_input.GetValue()
+            self.context.reference_ctx.smooth = value
+            self.context.build_mean_reference_track()
+        except Exception as e:
+            pass
 
     def SelectOrientation(self, event):
         selected = self.track_orientation_group.GetSelection()
@@ -200,3 +216,4 @@ class ReferenceTrackPanel(wx.Panel, IObserver):
         self.UpdateImage()
         self.half_w_cut_input.SetValue(self.context.reference_ctx.half_w_cut)
         self.half_w_profile_input.SetValue(self.context.reference_ctx.half_w_profile)
+        self.smooth_input.SetValue(self.context.reference_ctx.smooth)
