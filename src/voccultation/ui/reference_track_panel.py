@@ -17,6 +17,7 @@ import imageio
 import numpy as np
 import wx
 
+from voccultation.methods.mean_reference_track import TrackOrientation
 from voccultation.model.data_context import DriftContext, IObserver
 
 class ReferenceTrackPanel(wx.Panel, IObserver):
@@ -56,6 +57,19 @@ class ReferenceTrackPanel(wx.Panel, IObserver):
         ctl_panel = wx.Panel(self)
         ctl_panel.SetSizer(ctl_sizer)
 
+        # Track orientation control
+        track_orientation_label = wx.StaticText(ctl_panel, wx.ID_ANY, label="Track orientation")
+        ctl_sizer.Add(track_orientation_label, flag=wx.ALL, border=4)
+
+        # Radio buttons for track orientation
+        self.track_orientation_group = wx.RadioBox(ctl_panel, wx.ID_ANY, label="",
+                                                   choices=["Automatic", "Horizontal", "Vertical"],
+                                                   majorDimension=0,
+                                                   style=wx.RA_SPECIFY_ROWS)
+        self.track_orientation_group.SetSelection(0)  # Default to "Automatic"
+        self.track_orientation_group.Bind(wx.EVT_RADIOBOX, self.SelectOrientation)
+        ctl_sizer.Add(self.track_orientation_group, flag=wx.ALL | wx.EXPAND, border=4)
+
         label = wx.StaticText(ctl_panel, label="Reference track half width:")
         ctl_sizer.Add(label, proportion=0, flag=wx.EXPAND | wx.ALL, border=10)
 
@@ -85,6 +99,17 @@ class ReferenceTrackPanel(wx.Panel, IObserver):
         ctl_sizer.Add(save_reference_slices, proportion=0, flag=wx.EXPAND | wx.ALL, border=10)
 
         main_sizer.Add(ctl_panel, proportion=0, flag=wx.ALL | wx.ALIGN_CENTER_VERTICAL, border=8)
+
+    def SelectOrientation(self, event):
+        selected = self.track_orientation_group.GetSelection()
+        if selected == 0:
+            self.context.reference_ctx.specify_track_orientation(None)
+        elif selected == 1:
+            self.context.reference_ctx.specify_track_orientation(TrackOrientation.TRACK_HORIZONTAL)
+        elif selected == 2:
+            self.context.reference_ctx.specify_track_orientation(TrackOrientation.TRACK_VERTICAL)
+        self.context.build_mean_reference_track()
+        self.context.build_occultation_track()
 
     def SetRefHalfW_Cut(self, event):
         try:

@@ -29,10 +29,20 @@ class OccultationTrackContext:
         self.reset()
 
     def reset(self):
-        self.track_pos = (0, 0)
+        if self.gray is None:
+            self.track_pos = (0, 0)
+        else:
+            self.track_pos = (self.gray.shape[1]//2, self.gray.shape[0]//2)
+
         self.half_w_profile : int = 5
         self.half_w_cut : int = 15
+        self.update_margin()
+        self.clear_reference_track()
+
+    def update_margin(self):
         self.margin : int = max(5*self.half_w_profile, self.half_w_cut)
+
+    def clear_reference_track(self):
         self.reference_track : DriftTrack = None
         self.track_rect : DriftTrackRect = None
         self.track : DriftTrack = None
@@ -57,6 +67,11 @@ class OccultationTrackContext:
             self.half_w_cut = 2*self.half_w_profile
         self.margin = max(5*self.half_w_profile, self.half_w_cut)
 
+    def track_position(self):
+        x = self.track_pos[1]
+        y = self.track_pos[0]
+        return x, y
+
     def specify_track_pos(self, x0 : int, y0 : int):
         """
         Specify occultation track position in the drift context.
@@ -66,19 +81,18 @@ class OccultationTrackContext:
             y0 (int): Y-coordinate of the position.
         """
         self.track_pos = (y0, x0)
-        if self.reference_track is not None:
-            w = self.reference_track.w
-            h = self.reference_track.h
-            self.track_rect = DriftTrackRect(x0, x0 + w, y0, y0 + h)
+        if self.track_rect is not None:
+            self.track_rect.specify_position(x0, y0)
 
     def specify_reference_track(self, reference_track : DriftTrack):
+        if reference_track is None:
+            self.clear_reference_track()
+            return
         (y0, x0) = self.track_pos
         w = reference_track.w
         h = reference_track.h
         self.reference_track = reference_track
         self.track_rect = DriftTrackRect(x0, x0 + w, y0, y0 + h)
-
-    def build_occultation_profile(self, remove_sky : bool):
         occultation_track_area, _ = self.track_rect.extract_track(self.gray, self.margin)
         occ_path = DriftTrackPath(self.reference_track.path.points,
                                   self.reference_track.path.normals,
@@ -88,11 +102,15 @@ class OccultationTrackContext:
                                 self.margin,
                                 occ_path)
 
+    def build_occultation_profile(self, remove_sky : bool):
         # profile of track
+        if self.track is None:
+            return
+        self.side_slices.clear()
         self.slices = drift_slice.slice_track(self.track.gray,
-                                                          self.track.path,
-                                                          self.track.margin,
-                                                          0)
+                                              self.track.path,
+                                              self.track.margin,
+                                              0)
 
         # profiles parallel to track
         for i in (-4,-2,2,4):

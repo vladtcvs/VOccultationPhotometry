@@ -18,7 +18,8 @@ dependencies = [
     'pillow',
     'matplotlib',
     'imutils',
-    'scikit-image'
+    'scikit-image',
+    'imageio'
 ]
 
 [project.scripts]

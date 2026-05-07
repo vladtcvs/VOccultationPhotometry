@@ -13,11 +13,12 @@
 #
 
 import wx
+import wx.lib.newevent
+NavigationEvent, EVT_NAVIGATION = wx.lib.newevent.NewEvent()
 
 class NavigationPanel(wx.Panel):
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
-        self.observers = []
         ctl_btn_sizer = wx.GridSizer(cols=3, rows=3, hgap=10, vgap=10)
         self.SetSizer(ctl_btn_sizer)
 
@@ -102,9 +103,6 @@ class NavigationPanel(wx.Panel):
         self.held_x = 0
         self.held_y = 0
 
-    def add_observer(self, observer):
-        self.observers.append(observer)
-
     def _notify(self):
-        for observer in self.observers:
-            observer.navigate(self.held_x, self.held_y)
+        evt = NavigationEvent(dx=self.held_x, dy=self.held_y)
+        wx.PostEvent(self, evt)

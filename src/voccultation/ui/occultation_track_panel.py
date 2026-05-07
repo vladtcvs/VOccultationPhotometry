@@ -18,7 +18,7 @@ import numpy as np
 import wx
 
 from voccultation.model.data_context import DriftContext, IObserver
-from voccultation.ui.navigation_panel import NavigationPanel
+from voccultation.ui.navigation_panel import EVT_NAVIGATION, NavigationPanel
 
 class OccultationTrackPanel(wx.Panel, IObserver):
     def __init__(self, parent, context : DriftContext):
@@ -91,7 +91,7 @@ class OccultationTrackPanel(wx.Panel, IObserver):
         ctl_sizer.Add(save_occultation_slices, proportion=0, flag=wx.EXPAND | wx.ALL, border=10)
 
         navigator = NavigationPanel(ctl_panel)
-        navigator.add_observer(self)
+        navigator.Bind(EVT_NAVIGATION, self.OnNavigate)
         ctl_sizer.Add(navigator, proportion=0, flag=wx.EXPAND | wx.ALL, border=10)
 
         main_sizer.Add(ctl_panel, proportion=0, flag=wx.ALL | wx.ALIGN_CENTER_VERTICAL, border=8)
@@ -115,10 +115,11 @@ class OccultationTrackPanel(wx.Panel, IObserver):
         except Exception as e:
             pass
 
-    def navigate(self, dx, dy):
-        x = self.context.occultation_ctx.track_pos[1] + dx
-        y = self.context.occultation_ctx.track_pos[0] + dy
-        self.context.specify_occultation_track(x, y)
+    def OnNavigate(self, event):
+        dx = event.dx
+        dy = event.dy
+        x, y = self.context.occultation_ctx.track_position()
+        self.context.occultation_ctx.specify_track_pos(x + dx, y + dy)
         self.context.build_occultation_track()
 
     def AnalyzeOccultation(self, event):
@@ -171,7 +172,7 @@ class OccultationTrackPanel(wx.Panel, IObserver):
             pathname = str(fileDialog.GetPath())
             if not pathname.endswith(".csv"):
                 pathname = pathname + ".csv"
-            
+
             with open(pathname, "w", encoding='utf8') as f:
                 writer = csv.writer(f)
                 writer.writerow(['id', 'value', 'error'])
