@@ -101,6 +101,9 @@ class MeanReferenceTrackContext:
             guid (str): A unique identifier for the new track.
             label (str): A descriptive label for the track.
         """
+        if self.gray is None:
+            return
+
         if len(self.track_rects) == 0:
             w = default_w
             h = default_h
@@ -120,11 +123,12 @@ class MeanReferenceTrackContext:
     def autodetect_tracks(self):
         self.clear_reference_tracks()
         self.clear_mean_track()
-        if self.gray is not None:
-            track_rects_list = tracks_detect.detect_reference_tracks(self.gray, 9, [2, 1.2])
-            for rect in track_rects_list:
-                new_guid = str(uuid.uuid4())
-                self.track_rects[new_guid] = rect
+        if self.gray is None:
+            return
+        track_rects_list = tracks_detect.detect_reference_tracks(self.gray, 9, [2, 1.2])
+        for rect in track_rects_list:
+            new_guid = str(uuid.uuid4())
+            self.track_rects[new_guid] = rect
 
     def set_half_w_cut(self, half_w : int):
         self.half_w_cut = half_w

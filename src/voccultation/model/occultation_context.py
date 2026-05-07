@@ -104,6 +104,8 @@ class OccultationTrackContext:
 
     def build_occultation_profile(self, remove_sky : bool):
         # profile of track
+        if self.track is None:
+            return
         self.side_slices.clear()
         self.slices = drift_slice.slice_track(self.track.gray,
                                               self.track.path,
