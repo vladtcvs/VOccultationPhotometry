@@ -127,6 +127,8 @@ class DetectTracksPanel(wx.Panel, IObserver):
         self.context.build_mean_reference_track()
 
     def AddNewReference(self, event):
+        if self.context.gray is None:
+            return
         guid = self.track_selector.add_new_reference_track()
         label = self.track_selector.track_labels.guid_label(guid)
         self.context.reference_ctx.create_new_track(guid, label, self.context.rect_width, self.context.rect_height)
@@ -189,6 +191,9 @@ class DetectTracksPanel(wx.Panel, IObserver):
 
     def AutoDetectTracks(self, event):
         self.track_selector.clear()
+        if self.context.gray is None:
+            return
+
         self.context.autodetect_tracks()
 
         for guid in self.context.reference_ctx.track_rects.keys():
