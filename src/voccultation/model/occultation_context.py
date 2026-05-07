@@ -33,9 +33,16 @@ class OccultationTrackContext:
             self.track_pos = (0, 0)
         else:
             self.track_pos = (self.gray.shape[1]//2, self.gray.shape[0]//2)
+
         self.half_w_profile : int = 5
         self.half_w_cut : int = 15
+        self.update_margin()
+        self.clear_reference_track()
+
+    def update_margin(self):
         self.margin : int = max(5*self.half_w_profile, self.half_w_cut)
+
+    def clear_reference_track(self):
         self.reference_track : DriftTrack = None
         self.track_rect : DriftTrackRect = None
         self.track : DriftTrack = None
@@ -47,9 +54,6 @@ class OccultationTrackContext:
         self.slices_image : np.ndarray = None
         self.slices_marks : np.ndarray = None
         self.plot : np.ndarray = None
-
-    def update_rect_size(self, width, height):
-        self.track_rect.specify_size(width, height)
 
     def set_half_w_cut(self, half_w : int):
         self.half_w_cut = half_w
@@ -81,6 +85,9 @@ class OccultationTrackContext:
             self.track_rect.specify_position(x0, y0)
 
     def specify_reference_track(self, reference_track : DriftTrack):
+        if reference_track is None:
+            self.clear_reference_track()
+            return
         (y0, x0) = self.track_pos
         w = reference_track.w
         h = reference_track.h

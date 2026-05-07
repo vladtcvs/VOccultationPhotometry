@@ -122,16 +122,17 @@ class DetectTracksPanel(wx.Panel, IObserver):
         self.Layout()
 
     def TracksUpdated(self, event):
-        self.context.reference_ctx.reset_labels()
         for guid in self.context.reference_ctx.track_rects.keys():
-            self.context.reference_ctx.add_label(guid, self.track_selector.track_labels.guid_label(guid))
+            self.context.reference_ctx.assign_label(guid, self.track_selector.track_labels.guid_label(guid))
         self.context.build_mean_reference_track()
 
     def AddNewReference(self, event):
         guid = self.track_selector.add_new_reference_track()
         label = self.track_selector.track_labels.guid_label(guid)
-        self.context.reference_ctx.add_new_track(guid, label)
+        self.context.reference_ctx.create_new_track(guid, label, self.context.rect_width, self.context.rect_height)
         self.Layout()
+        self.active_reference_track = guid
+        self.track_selector.select_guid_reference_track(guid)
 
     def _get_img_crds(self, event):
         x, y = event.GetPosition()
@@ -168,6 +169,8 @@ class DetectTracksPanel(wx.Panel, IObserver):
             self.context.occultation_ctx.specify_track_pos(x, y)
         else:
             self.context.reference_ctx.specify_track_pos(self.active_reference_track, x, y)
+            self.context.build_mean_reference_track()
+
         self.context.display_tracks()
 
     def OnNavigate(self, event):
@@ -181,12 +184,11 @@ class DetectTracksPanel(wx.Panel, IObserver):
             x, y = self.context.reference_ctx.track_position(self.active_reference_track)
             x, y = (x + dx, y + dy)
             self.context.reference_ctx.specify_track_pos(self.active_reference_track, x, y)
+            self.context.build_mean_reference_track()
         self.context.display_tracks()
 
     def AutoDetectTracks(self, event):
         self.track_selector.clear()
-        self.context.reference_ctx.reset()
-        self.context.occultation_ctx.reset()
         self.context.autodetect_tracks()
 
         for guid in self.context.reference_ctx.track_rects.keys():
@@ -194,7 +196,7 @@ class DetectTracksPanel(wx.Panel, IObserver):
 
         for guid in self.context.reference_ctx.track_rects.keys():
             label = self.track_selector.track_labels.guid_label(guid)
-            self.context.reference_ctx.add_label(guid, label)
+            self.context.reference_ctx.assign_label(guid, label)
 
         self.Layout()
         self.context.build_mean_reference_track()

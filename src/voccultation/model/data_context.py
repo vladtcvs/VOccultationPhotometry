@@ -47,14 +47,14 @@ class DriftContext:
         self.occultation_ctx = OccultationTrackContext()
 
         self.rect_width = 50
-        self.rect_height = 50
+        self.rect_height = 100
 
     def update_rect_size(self, width : int, height : int):
         self.rect_width = width
         self.rect_height = height
         self.reference_ctx.update_rect_size(width, height)
-        self.occultation_ctx.update_rect_size(width, height)
         self.build_mean_reference_track()
+        self.build_occultation_track()
         self.display_tracks()
         self.notify_observers()
 
@@ -208,9 +208,15 @@ class DriftContext:
         Detect tracks in the drift context.
         """
         self.reference_ctx.autodetect_tracks()
-
+        self.build_mean_reference_track()
+        self.build_occultation_track()
         # draw track bounding rectangles
         self.draw_tracks()
+
+        if self.reference_ctx.mean_track is not None:
+            self.rect_width = self.reference_ctx.mean_track.w
+            self.rect_height = self.reference_ctx.mean_track.h
+
         self.notify_observers()
 
     def build_mean_reference_track(self):
@@ -218,8 +224,6 @@ class DriftContext:
         Build mean reference track in the drift context.
         """
         self.reference_ctx.build_mean_reference_track()
-        self.rect_width = self.reference_ctx.mean_track.w
-        self.rect_height = self.reference_ctx.mean_track.h
         self.occultation_ctx.specify_reference_track(self.reference_ctx.mean_track)
         # draw tracks
         self.draw_tracks()
@@ -229,6 +233,7 @@ class DriftContext:
         """
         Build occultation track in the drift context.
         """
+        self.occultation_ctx.specify_reference_track(self.reference_ctx.mean_track)
         self.occultation_ctx.build_occultation_profile(self.remove_sky)
         self.draw_tracks()
         self.notify_observers()
