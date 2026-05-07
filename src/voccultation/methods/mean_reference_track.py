@@ -12,10 +12,15 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 #
 
+from enum import Enum
 import numpy as np
 from typing import List, Tuple
 
 from voccultation.data_structures.data_containers import DriftTrackPath, DriftTrackRect
+
+class TrackOrientation(Enum):
+    TRACK_HORIZONTAL = 0
+    TRACK_VERTICAL = 1
 
 def mean_track(tracks : List[DriftTrackRect], image : np.ndarray, margin : int) -> np.ndarray:
     """
@@ -42,7 +47,9 @@ def mean_track(tracks : List[DriftTrackRect], image : np.ndarray, margin : int) 
     sum_track[np.where(sum_weight == 0)] = 0
     return sum_track
 
-def _mean_track_to_points(track : np.ndarray, margin : int) -> Tuple[np.ndarray, bool]:
+def _mean_track_to_points(track : np.ndarray,
+                          margin : int,
+                          orientation : TrackOrientation | None) -> Tuple[np.ndarray, TrackOrientation]:
     """
     Convert a mean track to points - detect position of brightest pixels on each row of image.
 
@@ -55,40 +62,44 @@ def _mean_track_to_points(track : np.ndarray, margin : int) -> Tuple[np.ndarray,
     """
     w = track.shape[1]
     h = track.shape[0]
-    
+
     points = []
 
-    if w > h:
+    if orientation is None:
+        if w > h:
+            orientation = TrackOrientation.TRACK_HORIZONTAL
+        else:
+            orientation = TrackOrientation.TRACK_VERTICAL
+
+    if orientation == TrackOrientation.TRACK_HORIZONTAL:
         # horizontal track
         for x in range(margin, w-margin):
             slice = track[:,x]
             maximum = int(slice.argmax())
             points.append((maximum-margin, x-margin))
-        transposed = True
     else:
         # vertical track
         for y in range(margin, h-margin):
             slice = track[y,:]
             maximum = int(slice.argmax())
             points.append((y-margin,maximum-margin))
-        transposed = False
 
-    return np.array(points), transposed
+    return np.array(points), orientation
 
-def _smooth_track_points(points : np.ndarray, transposed : bool) -> np.ndarray:
+def _smooth_track_points(points : np.ndarray, orientation : TrackOrientation) -> np.ndarray:
     """
     Smooth a list of track points.
 
     Parameters:
         points (np.ndarray): List of track points.
-        transposed (bool): Flag indicating if the track is transposed.
+        orientation (TrackOrientation): Flag indicating if the track is more vertical or more horizontal
 
     Returns:
         np.ndarray: Smoothed list of track points.
     """
     hw = 2
     L = points.shape[0]
-    if not transposed:
+    if orientation == TrackOrientation.TRACK_VERTICAL:
         index = 1
     else:
         index = 0
@@ -108,7 +119,8 @@ def _smooth_track_points(points : np.ndarray, transposed : bool) -> np.ndarray:
 
 def build_mean_reference_track(gray : np.ndarray,
                                references : List[DriftTrackRect],
-                               margin : int) -> Tuple[np.ndarray, DriftTrackPath]:
+                               margin : int,
+                               orientation : TrackOrientation | None) -> Tuple[np.ndarray, DriftTrackPath]:
     """
     Build reference track image from a list of tracks.
 
@@ -121,7 +133,7 @@ def build_mean_reference_track(gray : np.ndarray,
         Tuple[np.ndarray, DriftTrackPath]: Reference track image and path.
     """
     track = mean_track(references, gray, margin)
-    points, transposed = _mean_track_to_points(track, margin)
-    points = _smooth_track_points(points, transposed)
+    points, orientation = _mean_track_to_points(track, margin, orientation)
+    points = _smooth_track_points(points, orientation)
     path = DriftTrackPath(points, None, None)
     return (track, path)

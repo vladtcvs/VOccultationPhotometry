@@ -17,7 +17,7 @@ import uuid
 
 from voccultation.data_structures.data_containers import DriftProfile, DriftSlice, DriftTrack, DriftTrackPath, DriftTrackRect
 from voccultation.methods import drift_profile, drift_slice, tracks_detect
-from voccultation.methods.mean_reference_track import build_mean_reference_track
+from voccultation.methods.mean_reference_track import build_mean_reference_track, TrackOrientation
 
 class MeanReferenceTrackContext:
     """Context class for managing and computing mean reference tracks from drift profiles.
@@ -33,6 +33,7 @@ class MeanReferenceTrackContext:
         """Reset the context, clearing any stored data."""
         self.half_w_profile = 5
         self.half_w_cut = 15
+        self.track_orientation : TrackOrientation = None
         self.update_margin()
         self.clear_reference_tracks()
         self.clear_mean_track()
@@ -61,6 +62,10 @@ class MeanReferenceTrackContext:
 
         for rect in self.track_rects.values():
             rect.specify_size(width, height)
+        self.build_mean_reference_track()
+
+    def specify_track_orientation(self, orientation : TrackOrientation):
+        self.track_orientation = orientation
         self.build_mean_reference_track()
 
     def specify_track_pos(self, guid, x,  y):
@@ -150,7 +155,8 @@ class MeanReferenceTrackContext:
         # build mean track
         ref_track_area, ref_path = build_mean_reference_track(self.gray,
                                                               list(self.track_rects.values()),
-                                                              self.half_w_cut)
+                                                              self.half_w_cut,
+                                                              self.track_orientation)
 
         ref_normals = drift_slice.build_track_normals(ref_path.points)
         ref_path = DriftTrackPath(ref_path.points,
