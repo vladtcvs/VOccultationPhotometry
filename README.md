@@ -113,6 +113,7 @@ This way is applicable for windows if you don't have python installed to your sy
 3. Expand "Assets"
 4. Download `voccultation.zip`
 5. Extract archive
+6. Run voccultation.bat
 
 # Build
 
