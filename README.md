@@ -26,7 +26,7 @@ App hase 3 panels:
 * Reference track panel
 * Occultation track panel
 
-### Detect tracks
+### Detect tracks panel
 
 This panel is intended for specifying reference and occultation tracks. It has elements:
 
@@ -85,10 +85,24 @@ This panel is intended for specifying reference and occultation tracks. It has e
 
 This way is applicable if you have python installed to your system.
 
-Run:
+### Linux & Mac
+
+1. Make sure you have python installed on your system, version 3.11 or newer
+2. Run:
 ```sh
 python -m pip install voccultation
 ```
+
+**Note:** in some Linux distro there is no `python` command, try specify `python3`
+
+### Windows
+
+1. Open Microsoft store and install python 3.14
+2. Open command line (cmd.exe) and enter
+```
+python3.14 -m pip install voccultation
+```
+3. App is insalled to location `C:\Users\%USERNAME%\AppData\Local\Python\pythoncore-3.14-64\Scripts\voccultation.exe`
 
 ## Using pre-built binary
 
