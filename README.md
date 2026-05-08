@@ -88,12 +88,17 @@ This way is applicable if you have python installed to your system.
 ### Linux & Mac
 
 1. Make sure you have python installed on your system, version 3.11 or newer
-2. Run:
+2. Run in terminal:
 ```sh
 python -m pip install voccultation
 ```
+3. Run in terminal to launch application:
+```sh
+voccultation
+```
 
 **Note:** in some Linux distro there is no `python` command, try specify `python3`
+
 
 ### Windows
 
@@ -103,6 +108,7 @@ python -m pip install voccultation
 python3.14 -m pip install voccultation
 ```
 3. App is insalled to location `C:\Users\%USERNAME%\AppData\Local\Python\pythoncore-3.14-64\Scripts\voccultation.exe`
+4. Create desktop shortcut (right click -> Send to -> Desktop)
 
 ## Using pre-built binary
 
