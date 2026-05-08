@@ -3,7 +3,7 @@
 * [Description](#description)
     * [Purpose](#purpose)
     * [UI description](#ui-description)
-        * [Detect tracks panel](#tracks-detection-panel)
+        * [Detect tracks panel](#detect-tracks-panel)
         * [Reference track panel](#reference-track-panel)
         * [Occultation track panel](#occultation-track-panel)
 * [Usage](#usage)
