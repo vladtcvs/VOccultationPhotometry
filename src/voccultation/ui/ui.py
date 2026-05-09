@@ -45,7 +45,7 @@ class DriftWindow(wx.Frame):
 
         statusbar = wx.StatusBar(self)
         self.SetStatusBar(statusbar)
-        self.status = wx.StaticText(statusbar, label="x:N/A y:N/A")
+        self.status = wx.StaticText(statusbar, label="x:N/A y:N/A zoom:100%")
 
         panel = wx.Panel(self)
         self.notebook = wx.Notebook(panel)

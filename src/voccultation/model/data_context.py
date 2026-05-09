@@ -41,6 +41,7 @@ class DriftContext:
         self.observers : List[IObserver] = []
 
         self.image_state = self.ImageState.INIT
+        self.zoom = 1
 
         # original frame
         self.gray : np.ndarray | None = None
@@ -160,6 +161,7 @@ class DriftContext:
         assert self.gray is not None
         gray = (self.gray.astype(np.float32) - 127) * self.display_contrast + 127 + self.display_brightness * 127
         gray = np.clip(gray, 0, 255)
+        
         self.rgb = cv2.cvtColor(gray.astype(np.uint8), cv2.COLOR_GRAY2RGB)
 
         # draw reference track line on each of reference tracks on original image
