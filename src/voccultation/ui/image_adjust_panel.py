@@ -49,12 +49,12 @@ class ImageAdjustPanel(wx.Panel):
 
     def on_brightness_change(self, event):
         self.brighness = self.brightness_ctl.GetValue()
-        evt = ImageAdjustEvent(brightness=self.brighness, contrast=self.contrast, gamma=self.gamma)
+        evt = ImageAdjustEvent(brightness=self.brighness, contrast=self.contrast)
         wx.PostEvent(self, evt)
         self.Layout()
 
     def on_contrast_change(self, event):
         self.contrast = self.contrast_ctl.GetValue()
-        evt = ImageAdjustEvent(brightness=self.brighness, contrast=self.contrast, gamma=self.gamma)
+        evt = ImageAdjustEvent(brightness=self.brighness, contrast=self.contrast)
         wx.PostEvent(self, evt)
         self.Layout()

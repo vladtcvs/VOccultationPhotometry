@@ -162,7 +162,12 @@ class DriftTrack:
         self.h = self.gray.shape[0]-2*self.margin
 
     def draw(self, color : tuple, normals_color : tuple, transparency : float) -> np.ndarray:
-        rgb = cv2.cvtColor(self.gray.astype(np.uint8), cv2.COLOR_GRAY2RGB)
+        gray = self.gray.astype(np.float32)
+        amax = np.amax(gray)
+        if amax > 0:
+            gray = gray / amax * 255
+
+        rgb = cv2.cvtColor(gray.astype(np.uint8), cv2.COLOR_GRAY2RGB)
         return self.draw_in_place(rgb, 0, 0, color, normals_color, transparency)
 
     def draw_in_place(self,
@@ -220,7 +225,11 @@ class DriftSlice:
         self.slices[np.where(np.isnan(self.slices))] = 0
 
     def draw(self, used_width : int) -> Tuple[np.ndarray, np.ndarray]:
-        rgb = cv2.cvtColor(self.slices.transpose().astype(np.uint8), cv2.COLOR_GRAY2RGB)
+        slices = self.slices.astype(np.float32)
+        amax=np.amax(slices)
+        if amax > 0:
+            slices = slices / amax * 255
+        rgb = cv2.cvtColor(slices.transpose().astype(np.uint8), cv2.COLOR_GRAY2RGB)
         marks = np.zeros_like(rgb)
         if used_width is not None:
             center = int(self.width/2)

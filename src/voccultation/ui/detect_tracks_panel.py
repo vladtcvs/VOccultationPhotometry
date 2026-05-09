@@ -53,7 +53,8 @@ class DetectTracksPanel(wx.Panel, IObserver):
 
         # Controls
         ctl_sizer = wx.BoxSizer(wx.VERTICAL)
-        ctl_panel = wx.Panel(self)
+        ctl_panel = scrolled.ScrolledPanel(self)
+        ctl_panel.SetupScrolling(False, True)
         ctl_panel.SetSizer(ctl_sizer)
 
         auto_detect_references = wx.Button(ctl_panel, label="Auto detect references")
@@ -100,7 +101,7 @@ class DetectTracksPanel(wx.Panel, IObserver):
         self.track_height_input.Bind(wx.EVT_SPINCTRL, self.TrackDimensions)
         h_sizer.Add(self.track_height_input)
 
-        main_sizer.Add(ctl_panel, proportion=0, flag=wx.ALL | wx.ALIGN_CENTER_VERTICAL, border=8)
+        main_sizer.Add(ctl_panel, proportion=0, flag=wx.ALL | wx.EXPAND, border=8)
 
     def TrackDimensions(self, event):
         try:
