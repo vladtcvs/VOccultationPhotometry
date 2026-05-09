@@ -12,11 +12,11 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 #
 
-from typing import Dict, List
 import wx
 import wx.lib.scrolledpanel as scrolled
 
 from voccultation.model.data_context import DriftContext, IObserver
+from voccultation.ui.image_adjust_panel import ImageAdjustPanel, EVT_IMAGE_ADJUST
 from voccultation.ui.navigation_panel import EVT_NAVIGATION, NavigationPanel
 from voccultation.ui.track_selector import EVT_OCCULTATION_TRACK_PRESSED, EVT_REFERENCE_TRACK_PRESSED, EVT_REMOVE_TRACK_PRESSED, EVT_TRACKS_UPDATED, TrackSelector
 
@@ -63,6 +63,10 @@ class DetectTracksPanel(wx.Panel, IObserver):
         navigator = NavigationPanel(ctl_panel)
         navigator.Bind(EVT_NAVIGATION, self.OnNavigate)
         ctl_sizer.Add(navigator, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALL, border=10)
+
+        image_adjust = ImageAdjustPanel(ctl_panel)
+        image_adjust.Bind(EVT_IMAGE_ADJUST, self.OnImageAdjust)
+        ctl_sizer.Add(image_adjust, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALL, border=10)
 
         # Tracks
         self.track_selector = TrackSelector(ctl_panel)
@@ -174,6 +178,11 @@ class DetectTracksPanel(wx.Panel, IObserver):
             self.context.build_mean_reference_track()
 
         self.context.display_tracks()
+
+    def OnImageAdjust(self, event):
+        brightness = event.brightness
+        contrast = event.contrast
+        self.context.set_image_parameters(brightness, contrast)
 
     def OnNavigate(self, event):
         dx = event.dx

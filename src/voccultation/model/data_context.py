@@ -46,6 +46,10 @@ class DriftContext:
         self.reference_ctx = MeanReferenceTrackContext()
         self.occultation_ctx = OccultationTrackContext()
 
+        self.display_brightness = 0
+        self.display_contrast = 1
+        self.display_gamma = 1
+
         self.rect_width = 50
         self.rect_height = 100
 
@@ -136,13 +140,16 @@ class DriftContext:
             self.rgb = None
             return
 
-        self.rgb = cv2.cvtColor(self.gray.astype(np.uint8), cv2.COLOR_GRAY2RGB)
+        gray = (self.gray.astype(np.float32) - 127) * self.display_contrast + 127 + self.display_brightness * 127
+        gray = np.clip(gray, 0, 255)
+        self.rgb = cv2.cvtColor(gray.astype(np.uint8), cv2.COLOR_GRAY2RGB)
+
         # draw reference track line on each of reference tracks on original image
         for guid in self.reference_ctx.track_rects:
                 reference_track_rect = self.reference_ctx.track_rects[guid]
                 # draw track
                 if self.reference_ctx.mean_track is not None:
-                    reference_track_area, _ = reference_track_rect.extract_track(self.gray, 0)
+                    reference_track_area, _ = reference_track_rect.extract_track(gray, 0)
                     reference_track = DriftTrack(reference_track_area,
                                                  margin=0,
                                                  path=self.reference_ctx.mean_track.path)
@@ -236,4 +243,10 @@ class DriftContext:
         self.occultation_ctx.specify_reference_track(self.reference_ctx.mean_track)
         self.occultation_ctx.build_occultation_profile(self.remove_sky)
         self.draw_tracks()
+        self.notify_observers()
+
+    def set_image_parameters(self, brightness, contrast):
+        self.display_brightness = brightness
+        self.display_contrast = contrast
+        self.display_tracks()
         self.notify_observers()
