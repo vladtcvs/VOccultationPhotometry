@@ -19,6 +19,27 @@ import numpy as np
 from voccultation.data_structures.data_containers import DriftProfile, DriftSlice, DriftTrack, DriftTrackPath, DriftTrackRect
 from voccultation.methods import drift_profile, drift_slice
 
+
+# State Transition Diagrams
+#
+# ImageState:
+#   INIT  -->  IMAGE_LOADED   (via set_image())
+#     ^               |
+#     |               v
+#     +---<---  (via clear_image() / reset())
+#
+# ProfileState:
+#   INIT  -->  REFERENCE_SPECIFIED   (via specify_reference_track())
+#     |                 |
+#     |                 v
+#     |          SLICES_READY   (via build_occultation_profile())
+#     |                 |
+#     |                 v
+#     |          PROFILE_BUILT
+#     |                 |
+#     +---<-------------+   (via clear_reference_track() / reset())
+#
+
 class OccultationTrackContext:
     class ImageState(enum.Enum):
         INIT = 0
@@ -150,7 +171,7 @@ class OccultationTrackContext:
 
         # build profile
         self.profile = drift_slice.slices_to_profile(self.slices,
-                                                                 self.half_w_profile)
+                                                     self.half_w_profile)
 
         if remove_sky:
             occultation_side_profiles = []
@@ -165,13 +186,16 @@ class OccultationTrackContext:
         self.profile_state = self.ProfileState.PROFILE_BUILT
 
     def draw_track(self):
-        if self.track is not None:
+        if self.profile_state is not self.ProfileState.INIT:
+            assert self.track is not None
             self.image = self.track.draw((0,200,0), (0,200,0), 0.5)
         else:
             self.image = None
 
         # occultation slices
-        if self.slices is not None:
+        if self.profile_state in [self.ProfileState.SLICES_READY,
+                                  self.ProfileState.PROFILE_BUILT]:
+            assert self.slices is not None
             ref = self.slices.draw(self.half_w_profile)
             self.slices_image = ref[0]
             self.slices_marks = ref[1]
@@ -180,7 +204,8 @@ class OccultationTrackContext:
             self.slices_marks = None
 
         # build occultation profile plot
-        if self.profile is not None:
+        if self.profile_state is self.ProfileState.PROFILE_BUILT:
+            assert self.profile is not None
             self.plot = self.profile.plot_profile(640, 480)
         else:
             self.plot = None 
