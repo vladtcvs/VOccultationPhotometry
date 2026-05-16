@@ -12,28 +12,41 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 #
 
-from typing import List
+import enum
+from typing import List, Tuple
 import numpy as np
 
 from voccultation.data_structures.data_containers import DriftProfile, DriftSlice, DriftTrack, DriftTrackPath, DriftTrackRect
 from voccultation.methods import drift_profile, drift_slice
 
-
 class OccultationTrackContext:
+    class ImageState(enum.Enum):
+        INIT = 0
+        IMAGE_LOADED = 1
+
+    class ProfileState(enum.Enum):
+        INIT = 0
+        REFERENCE_SPECIFIED = 1
+        SLICES_READY = 2
+        PROFILE_BUILT = 3
+
     def __init__(self):
-        self.gray : np.ndarray = None
+        self.image_state = self.ImageState.INIT
+        self.profile_state = self.ProfileState.INIT
+        self.gray : np.ndarray | None = None
+        self.reset()
+
+    def clear_image(self):
+        self.image_state = self.ImageState.INIT
+        self.gray = None
         self.reset()
 
     def set_image(self, gray : np.ndarray):
+        self.image_state = self.ImageState.IMAGE_LOADED
         self.gray = gray
         self.reset()
 
     def reset(self):
-        if self.gray is None:
-            self.track_pos = (0, 0)
-        else:
-            self.track_pos = (self.gray.shape[1]//2, self.gray.shape[0]//2)
-
         self.half_w_profile : int = 5
         self.half_w_cut : int = 15
         self.update_margin()
@@ -43,17 +56,18 @@ class OccultationTrackContext:
         self.margin : int = max(5*self.half_w_profile, self.half_w_cut)
 
     def clear_reference_track(self):
-        self.reference_track : DriftTrack = None
-        self.track_rect : DriftTrackRect = None
-        self.track : DriftTrack = None
+        self.reference_track : DriftTrack | None = None
+        self.track_rect : DriftTrackRect | None = None
+        self.track : DriftTrack | None = None
         self.sky_tracks : List[DriftTrack] = []
-        self.slices : DriftSlice = None
+        self.slices : DriftSlice | None = None
         self.side_slices : List[DriftSlice] = []
-        self.profile : DriftProfile = None
-        self.image : np.ndarray = None
-        self.slices_image : np.ndarray = None
-        self.slices_marks : np.ndarray = None
-        self.plot : np.ndarray = None
+        self.profile : DriftProfile | None = None
+        self.image : np.ndarray | None = None
+        self.slices_image : np.ndarray | None = None
+        self.slices_marks : np.ndarray | None = None
+        self.plot : np.ndarray | None = None
+        self.profile_state = self.ProfileState.INIT
 
     def set_half_w_cut(self, half_w : int):
         self.half_w_cut = half_w
@@ -67,9 +81,12 @@ class OccultationTrackContext:
             self.half_w_cut = 2*self.half_w_profile
         self.margin = max(5*self.half_w_profile, self.half_w_cut)
 
-    def track_position(self):
-        x = self.track_pos[1]
-        y = self.track_pos[0]
+    def track_position(self) -> Tuple[int,int]:
+        if self.profile_state is self.ProfileState.INIT:
+            return 0, 0
+        assert self.track_rect is not None
+        x = self.track_rect.left
+        y = self.track_rect.top
         return x, y
 
     def specify_track_pos(self, x0 : int, y0 : int):
@@ -80,15 +97,21 @@ class OccultationTrackContext:
             x0 (int): X-coordinate of the position.
             y0 (int): Y-coordinate of the position.
         """
-        self.track_pos = (y0, x0)
-        if self.track_rect is not None:
-            self.track_rect.specify_position(x0, y0)
+        if self.profile_state is self.ProfileState.INIT:
+            return
+        assert self.track_rect is not None
+        self.track_rect.specify_position(x0, y0)
 
     def specify_reference_track(self, reference_track : DriftTrack):
-        if reference_track is None:
-            self.clear_reference_track()
+        assert reference_track is not None
+        if self.image_state is not self.ImageState.IMAGE_LOADED:
             return
-        (y0, x0) = self.track_pos
+        assert self.gray is not None
+        if self.profile_state is self.ProfileState.INIT:
+            x0, y0 = (self.gray.shape[1]//2, self.gray.shape[0]//2)
+        else:
+            x0, y0 = self.track_position()
+
         w = reference_track.w
         h = reference_track.h
         self.reference_track = reference_track
@@ -101,17 +124,22 @@ class OccultationTrackContext:
         self.track = DriftTrack(occultation_track_area,
                                 self.margin,
                                 occ_path)
+        self.profile_state = self.ProfileState.REFERENCE_SPECIFIED
 
     def build_occultation_profile(self, remove_sky : bool):
         # profile of track
-        if self.track is None:
+        if self.image_state is self.ImageState.INIT:
             return
+        if self.profile_state is self.ProfileState.INIT:
+            return
+        assert self.track is not None
         self.side_slices.clear()
         self.slices = drift_slice.slice_track(self.track.gray,
                                               self.track.path,
                                               self.track.margin,
                                               0)
 
+        self.profile_state = self.ProfileState.SLICES_READY
         # profiles parallel to track
         for i in (-4,-2,2,4):
             offsetes_slice = drift_slice.slice_track(self.track.gray,
@@ -134,6 +162,7 @@ class OccultationTrackContext:
             self.profile.profile = self.profile.profile - sky_profile.profile
         else:
             pass
+        self.profile_state = self.ProfileState.PROFILE_BUILT
 
     def draw_track(self):
         if self.track is not None:
@@ -154,4 +183,4 @@ class OccultationTrackContext:
         if self.profile is not None:
             self.plot = self.profile.plot_profile(640, 480)
         else:
-            self.plot = None
+            self.plot = None 
