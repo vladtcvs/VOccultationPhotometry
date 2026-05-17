@@ -22,22 +22,12 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y libgtk-3-dev
-        sudo apt-get install -y python3-wxgtk4.0 python3-numpy python3-opencv python3-matplotlib
-
-    - name: Create and configure venv
-      run: |
-        python -m venv myvenv --system-site-packages
-
-    - name: Verify venv
-      run: |
-        source myvenv/bin/activate
-        python -c "import wx; print(wx.version())"
-
+  
     - name: Install python dependencies
       run: |
         source myvenv/bin/activate
         python -m pip install --upgrade pip
-        python -m pip install pytest pillow scikit-image imutils pylint
+        python -m pip install pytest pillow scikit-image imutils pylint opencv-python numpy matplotlib wxpython
 
     - name: Install project
       run: |
