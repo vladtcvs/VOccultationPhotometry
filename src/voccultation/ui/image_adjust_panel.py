@@ -50,7 +50,7 @@ class ImageAdjustPanel(wx.Panel):
         sizer.Add(self.contrast_ctl, 1, wx.EXPAND)
 
         # Zoom control
-        sizer.Add(wx.StaticText(self, label="Zoom:"), flag=wx.ALIGN_CENTER)
+        sizer.Add(wx.StaticText(self, label="Zoom:"), 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
 
         btn_zoom_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
