@@ -18,7 +18,12 @@ import wx.lib.scrolledpanel as scrolled
 from voccultation.model.data_context import DriftContext, IObserver
 from voccultation.ui.image_adjust_panel import ImageAdjustPanel, EVT_IMAGE_ADJUST
 from voccultation.ui.navigation_panel import EVT_NAVIGATION, NavigationPanel
-from voccultation.ui.track_selector import EVT_OCCULTATION_TRACK_PRESSED, EVT_REFERENCE_TRACK_PRESSED, EVT_REMOVE_TRACK_PRESSED, EVT_TRACKS_UPDATED, TrackSelector
+
+from voccultation.ui.track_selector import EVT_OCCULTATION_TRACK_PRESSED
+from voccultation.ui.track_selector import EVT_REFERENCE_TRACK_PRESSED
+from voccultation.ui.track_selector import EVT_REMOVE_TRACK_PRESSED
+from voccultation.ui.track_selector import EVT_TRACKS_UPDATED
+from voccultation.ui.track_selector import TrackSelector
 
 class DetectTracksPanel(wx.Panel, IObserver):
     def __init__(self, parent, context : DriftContext, status : wx.StaticText):
@@ -26,7 +31,7 @@ class DetectTracksPanel(wx.Panel, IObserver):
         self.status = status
         self.context = context
         self.context.add_observer(self)
-        self.active_reference_track : str = None
+        self.active_reference_track : str | None = None
 
         main_sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.SetSizer(main_sizer)

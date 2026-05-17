@@ -53,7 +53,7 @@ class LabelManager:
 class TrackSelector(wx.Panel):
     def __init__(self, parent):
         super().__init__(parent)
-        self.active_guid : str = None
+        self.active_guid : str | None = None
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         self.occultation_button = wx.Button(self, label="Occultation track")
         self.sizer.Add(self.occultation_button, proportion=0, flag=wx.ALL, border=8)
