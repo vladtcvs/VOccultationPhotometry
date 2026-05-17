@@ -25,21 +25,17 @@ jobs:
   
     - name: Install python dependencies
       run: |
-        source myvenv/bin/activate
         python -m pip install --upgrade pip
         python -m pip install pytest pillow scikit-image imutils pylint opencv-python numpy matplotlib wxpython
 
     - name: Install project
       run: |
-        source myvenv/bin/activate
         python -m pip install --no-deps .
 
     - name: Run linter
       run: |
-        source myvenv/bin/activate
         pylint --rcfile=pylintrc --fail-under=9 src/voccultation
 
     - name: Run tests
       run: |
-        source myvenv/bin/activate
         PYTHONPATH=src python -m pytest tests/ -v
