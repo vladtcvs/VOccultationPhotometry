@@ -117,7 +117,7 @@ This way is applicable for windows if you don't have python installed to your sy
 1. Open releases page: https://github.com/vladtcvs/VOccultation/releases
 2. Choose latest release
 3. Expand "Assets"
-4. Download `voccultation.zip`
+4. Download `voccultation-windows.zip`
 5. Extract archive
 6. Run voccultation.bat
 
