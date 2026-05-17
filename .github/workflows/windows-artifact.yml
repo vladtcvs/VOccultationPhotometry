@@ -30,11 +30,15 @@ jobs:
 
     - name: Build with PyInstaller
       run: |
-        pyinstaller --onefile --name voccultation src/voccultation/__main__.py
+        pyinstaller --copy-metadata imageio --windowed --name voccultation src/voccultation/__main__.py
+
+    - name: Zip artifact
+      run: |
+        Compress-Archive -Path dist\voccultation\* -DestinationPath voccultation-windows.zip
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
         name: voccultation-windows
-        path: dist\voccultation.exe
+        path: voccultation-windows.zip
         retention-days: 30
