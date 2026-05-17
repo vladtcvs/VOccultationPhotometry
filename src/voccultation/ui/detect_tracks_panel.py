@@ -42,17 +42,13 @@ class DetectTracksPanel(wx.Panel, IObserver):
         self.SetSizer(main_sizer)
 
         # Image panel
-        image_box = wx.StaticBox(self, wx.ID_ANY, label='Image')
-        image_box_sizer = wx.BoxSizer(wx.VERTICAL)
-        image_box.SetSizer(image_box_sizer)
-        main_sizer.Add(image_box, proportion=1, flag=wx.EXPAND | wx.ALL, border=8)
-
-        image_panel = scrolled.ScrolledPanel(image_box)
+        image_panel = scrolled.ScrolledPanel(self)
         image_panel_sizer = wx.BoxSizer(wx.VERTICAL)
         image_panel.SetSizer(image_panel_sizer)
         image_panel.SetupScrolling(True, True)
+        image_panel.SetAutoLayout(True)
 
-        image_box_sizer.Add(image_panel, proportion=1, flag=wx.EXPAND)
+        main_sizer.Add(image_panel, proportion=1, flag=wx.EXPAND)
 
         empty_img = wx.Image(600, 600)
         self.image_ctrl = wx.StaticBitmap(image_panel, wx.ID_ANY , wx.Bitmap(empty_img))
