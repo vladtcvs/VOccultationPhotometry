@@ -22,6 +22,8 @@ from voccultation.ui.detect_tracks_panel import DetectTracksPanel
 from voccultation.ui.reference_track_panel import ReferenceTrackPanel
 from voccultation.ui.occultation_track_panel import OccultationTrackPanel
 
+VERSION="1.3"
+
 class DriftWindow(wx.Frame):
     def __init__(self, title : str, context : DriftContext):
         wx.Frame.__init__(self, None, title=title, size=(1200,800))
@@ -77,7 +79,7 @@ class DriftWindow(wx.Frame):
     def OnAbout(self, event):
         aboutInfo = wx.adv.AboutDialogInfo()
         aboutInfo.SetName("VOccultation")
-        aboutInfo.SetVersion("Version: 1.2")
+        aboutInfo.SetVersion(f"Version: {VERSION}")
         aboutInfo.SetDescription("Asteroid occultation processing")
         aboutInfo.SetCopyright("Vladislav Tsendrovskii(C) 2026")
         aboutInfo.SetLicense("GNU GPL v3")
