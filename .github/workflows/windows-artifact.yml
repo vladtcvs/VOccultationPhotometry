@@ -1,10 +1,6 @@
 name: Windows Artifact
 
 on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
   workflow_dispatch:
 
 jobs:
@@ -41,4 +37,4 @@ jobs:
       with:
         name: voccultation-windows
         path: voccultation-windows.zip
-        retention-days: 30
+        retention-days: 3
