@@ -106,7 +106,7 @@ class TestDriftTrack:
         gray = np.zeros((10, 10), dtype=np.uint8)
         path = DriftTrackPath(np.array([[5, 5]]), np.array([[0, 1]]), 5.0)
         track = DriftTrack(gray, 0, path)
-        rgb = track.draw((255, 0, 0),  (0,200,0), 0.5)
+        rgb = track.draw((255, 0, 0),  (0,200,0), 0.5, 1)
         assert rgb.shape == (10, 10, 3)
         assert rgb.dtype == np.uint8
 
@@ -114,7 +114,7 @@ class TestDriftTrack:
         rgb = np.zeros((10, 10, 3), dtype=np.uint8)
         path = DriftTrackPath(np.array([[5, 5]]), np.array([[0, 1]]), 5.0)
         track = DriftTrack(np.zeros((10, 10), dtype=np.uint8), 0, path)
-        track.draw_in_place(rgb, 0, 0, (255, 0, 0),  (0,200,0), 0.5)
+        track.draw_in_place(rgb, 0, 0, (255, 0, 0),  (0,200,0), 0.5, 1)
         # Check that color was applied (rough check)
         print(rgb[5,:,:])
         assert rgb[5, 5, 1] > 0  # Green channel
