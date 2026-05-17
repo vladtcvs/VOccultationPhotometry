@@ -33,17 +33,21 @@ jobs:
 
     - name: Install python dependencies
       run: |
+        source .venv/bin/activate
         python -m pip install --upgrade pip
         python -m pip install pytest pillow scikit-image imutils pylint
 
     - name: Install project
       run: |
+        source .venv/bin/activate
         python -m pip install --no-deps .
 
     - name: Run linter
       run: |
+        source .venv/bin/activate
         pylint --rcfile=pylintrc --fail-under=9 src/voccultation
 
     - name: Run tests
       run: |
+        source .venv/bin/activate
         PYTHONPATH=src python -m pytest tests/ -v
