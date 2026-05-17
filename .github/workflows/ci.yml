@@ -18,7 +18,12 @@ jobs:
       with:
         python-version: '3.11'
 
-    - name: Install dependencies
+    - name: Install GTK 3 development libraries
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libgtk-3-dev
+
+    - name: Install python dependencies
       run: |
         python -m pip install --upgrade pip
         pip install pytest numpy opencv-python pillow scikit-image imutils matplotlib pylint wxPython
