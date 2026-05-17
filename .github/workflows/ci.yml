@@ -18,36 +18,33 @@ jobs:
       with:
         python-version: '3.11'
 
-    - name: Create and configure venv
-      run: |
-        python -m venv .venv --system-site-packages
-        source .venv/bin/activate
-        echo "PATH=$PATH" >> $GITHUB_ENV
-        echo "VIRTUAL_ENV=$VIRTUAL_ENV" >> $GITHUB_ENV
-
     - name: Install dependencies
       run: |
         sudo apt-get update
         sudo apt-get install -y libgtk-3-dev
         sudo apt-get install -y python3-wxgtk4.0 python3-numpy python3-opencv python3-matplotlib
 
+    - name: Create and configure venv
+      run: |
+        python -m venv myvenv --system-site-packages
+
     - name: Install python dependencies
       run: |
-        source .venv/bin/activate
+        source myvenv/bin/activate
         python -m pip install --upgrade pip
         python -m pip install pytest pillow scikit-image imutils pylint
 
     - name: Install project
       run: |
-        source .venv/bin/activate
+        source myvenv/bin/activate
         python -m pip install --no-deps .
 
     - name: Run linter
       run: |
-        source .venv/bin/activate
+        source myvenv/bin/activate
         pylint --rcfile=pylintrc --fail-under=9 src/voccultation
 
     - name: Run tests
       run: |
-        source .venv/bin/activate
+        source myvenv/bin/activate
         PYTHONPATH=src python -m pytest tests/ -v
