@@ -12,14 +12,46 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v6
       with:
         python-version: '3.11'
+
     - name: Install dependencies
       run: |
+        sudo apt-get update
+        sudo apt-get install -y libgtk-3-dev
+  
+    - name: Install python dependencies
+      run: |
         python -m pip install --upgrade pip
-        pip install pytest numpy opencv-python pillow scikit-image imutils matplotlib
+        python -m pip install pytest pillow scikit-image imutils pylint opencv-python numpy matplotlib
+
+    - name: Cache wxpython
+      id: cache-wxpython
+      uses: actions/cache@v5
+      with:
+        path: wxpython-4.2.5-cp311-cp311-linux_x86_64.whl
+        key: ${{ runner.os }}-wxpython
+
+    - name: Generate wxPython wheel
+      if: steps.cache-wxpython.outputs.cache-hit != 'true'
+      run: |
+        python -m pip wheel wxpython==4.2.5
+  
+    - name: Install wxPython wheel
+      run: |
+        python -m pip install wxpython-4.2.5-cp311-cp311-linux_x86_64.whl
+
+    - name: Install project
+      run: |
+        python -m pip install --no-deps .
+
+    - name: Run linter
+      run: |
+        pylint --rcfile=pylintrc src/voccultation
+
     - name: Run tests
       run: |
         PYTHONPATH=src python -m pytest tests/ -v
