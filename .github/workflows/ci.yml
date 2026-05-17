@@ -28,6 +28,11 @@ jobs:
       run: |
         python -m venv myvenv --system-site-packages
 
+    - name: Verify venv
+      run: |
+        source myvenv/bin/activate
+        python -c "import wx; print(wx.version())"
+
     - name: Install python dependencies
       run: |
         source myvenv/bin/activate
