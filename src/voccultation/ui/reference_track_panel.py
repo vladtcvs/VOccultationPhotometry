@@ -108,7 +108,7 @@ class ReferenceTrackPanel(wx.Panel, IObserver):
 
         main_sizer.Add(ctl_panel, proportion=0, flag=wx.ALL | wx.ALIGN_CENTER_VERTICAL, border=8)
 
-    def SetSmooth(self, event):
+    def SetSmooth(self, _event):
         try:
             value = self.smooth_input.GetValue()
             self.context.reference_ctx.smooth = value
@@ -116,7 +116,7 @@ class ReferenceTrackPanel(wx.Panel, IObserver):
         except Exception as e:
             pass
 
-    def SelectOrientation(self, event):
+    def SelectOrientation(self, _event):
         selected = self.track_orientation_group.GetSelection()
         if selected == 0:
             self.context.reference_ctx.specify_track_orientation(None)
@@ -127,7 +127,7 @@ class ReferenceTrackPanel(wx.Panel, IObserver):
         self.context.build_mean_reference_track()
         self.context.build_occultation_track()
 
-    def SetRefHalfW_Cut(self, event):
+    def SetRefHalfW_Cut(self, _event):
         try:
             value = self.half_w_cut_input.GetValue()
             self.context.set_reference_half_w_cut(value)
@@ -135,7 +135,7 @@ class ReferenceTrackPanel(wx.Panel, IObserver):
         except Exception as e:
             pass
     
-    def SetRefHalfW_Profile(self, event):
+    def SetRefHalfW_Profile(self, _event):
         try:
             value = self.half_w_profile_input.GetValue()
             self.context.set_reference_half_w_profile(value)
@@ -143,7 +143,9 @@ class ReferenceTrackPanel(wx.Panel, IObserver):
         except Exception as e:
             pass
 
-    def SaveReference(self, event):
+    def SaveReference(self, _event):
+        if self.context.reference_ctx.mean_profile is None:
+            return
         with wx.FileDialog(self, "Save reference profile", wildcard="CSV (*.csv)|*.csv",style=wx.FD_SAVE) as fileDialog:
 
             if fileDialog.ShowModal() == wx.ID_CANCEL:
@@ -175,6 +177,7 @@ class ReferenceTrackPanel(wx.Panel, IObserver):
             self.ref_track_ctrl.Refresh()
 
         if self.context.reference_ctx.mean_slices_image is not None:
+            assert self.context.reference_ctx.mean_slices_marks is not None
             height, width = self.context.reference_ctx.mean_slices_image.shape[:2]
             refimg = self.context.reference_ctx.mean_slices_image.copy()
             refmarks = self.context.reference_ctx.mean_slices_marks
@@ -199,7 +202,9 @@ class ReferenceTrackPanel(wx.Panel, IObserver):
         self.Layout()
         self.Refresh()
 
-    def SaveReferenceSlices(self, event):
+    def SaveReferenceSlices(self, _event):
+        if self.context.reference_ctx.mean_slices_image is None:
+            return
         with wx.FileDialog(self, "Save reference slices", wildcard="PNG (*.png)|*.png",style=wx.FD_SAVE) as fileDialog:
 
             if fileDialog.ShowModal() == wx.ID_CANCEL:

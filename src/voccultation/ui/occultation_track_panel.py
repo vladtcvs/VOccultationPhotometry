@@ -99,7 +99,7 @@ class OccultationTrackPanel(wx.Panel, IObserver):
     def PlotWithoutSky(self, event : wx.CommandEvent):
         self.context.remove_sky = event.IsChecked()
 
-    def SetOccHalfW_Cut(self, event : wx.CommandEvent):
+    def SetOccHalfW_Cut(self, _event : wx.CommandEvent):
         try:
             value = self.half_w_cut_input.GetValue()
             self.context.set_occultation_half_w_cut(value)
@@ -107,7 +107,7 @@ class OccultationTrackPanel(wx.Panel, IObserver):
         except Exception as e:
             pass
 
-    def SetOccHalfW_Profile(self, event : wx.CommandEvent):
+    def SetOccHalfW_Profile(self, _event : wx.CommandEvent):
         try:
             value = self.half_w_profile_input.GetValue()
             self.context.set_occultation_half_w_profile(value)
@@ -122,7 +122,7 @@ class OccultationTrackPanel(wx.Panel, IObserver):
         self.context.occultation_ctx.specify_track_pos(x + dx, y + dy)
         self.context.build_occultation_track()
 
-    def AnalyzeOccultation(self, event):
+    def AnalyzeOccultation(self, _event):
         self.context.build_occultation_track()
 
     def UpdateImage(self):
@@ -136,8 +136,9 @@ class OccultationTrackPanel(wx.Panel, IObserver):
             self.track_image_ctrl.Refresh()
 
         if self.context.occultation_ctx.slices_image is not None:
+            assert self.context.occultation_ctx.slices_marks is not None
             height, width = self.context.occultation_ctx.slices_image.shape[:2]
-            
+
             occimg = self.context.occultation_ctx.slices_image.copy()
             occmarks = self.context.occultation_ctx.slices_marks
 

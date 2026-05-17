@@ -34,7 +34,7 @@ jobs:
 
     - name: Run linter
       run: |
-        pylint --rcfile=pylintrc --fail-under=9 src/voccultation
+        pylint --rcfile=pylintrc src/voccultation
 
     - name: Run tests
       run: |
