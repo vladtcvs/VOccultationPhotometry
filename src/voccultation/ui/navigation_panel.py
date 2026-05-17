@@ -80,24 +80,28 @@ class NavigationPanel(wx.Panel):
         self.held_y = -1
         self._notify()
         self.timer.Start(self.first_delay, oneShot=True)
+        self.Layout()
 
     def on_left(self, event):
         self.held_x = -1
         self.held_y = 0
         self._notify()
         self.timer.Start(self.first_delay, oneShot=True)
+        self.Layout()
 
     def on_right(self, event):
         self.held_x = 1
         self.held_y = 0
         self._notify()
         self.timer.Start(self.first_delay, oneShot=True)
+        self.Layout()
 
     def on_down(self, event):
         self.held_x = 0
         self.held_y = 1
         self._notify()
         self.timer.Start(self.first_delay, oneShot=True)
+        self.Layout()
 
     def on_release(self, event):
         self.held_x = 0

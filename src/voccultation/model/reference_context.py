@@ -243,7 +243,7 @@ class MeanReferenceTrackContext:
     def draw_tracks(self):
         if self.profile_state is self.ProfileState.MEAN_TRACK:
             assert self.mean_track is not None
-            self.mean_image = self.mean_track.draw((255,0,0), (0,200,0), 0.5)
+            self.mean_image = self.mean_track.draw((255,0,0), (0,200,0), 0.5, 1)
         else:
             self.mean_image = None
 

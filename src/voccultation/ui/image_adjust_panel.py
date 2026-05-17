@@ -16,6 +16,7 @@ import wx
 import wx.lib.newevent
 
 ImageAdjustEvent, EVT_IMAGE_ADJUST = wx.lib.newevent.NewEvent()
+ZoomAdjustEvent, EVT_ZOOM_ADJUST = wx.lib.newevent.NewEvent()
 
 class ImageAdjustPanel(wx.Panel):
     """
@@ -26,6 +27,9 @@ class ImageAdjustPanel(wx.Panel):
         wx.Panel.__init__(self, parent, id)
         self.brighness = 0.0
         self.contrast = 1.0
+
+        self.zoom_steps = [1, 2, 4, 8]
+        self.zoom_idx = 0
 
         # Create sizer for layout
         sizer = wx.GridSizer(cols=2)
@@ -45,7 +49,36 @@ class ImageAdjustPanel(wx.Panel):
         sizer.Add(contrast_label, 0, wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, 5)
         sizer.Add(self.contrast_ctl, 1, wx.EXPAND)
 
+        # Zoom control
+        sizer.Add(wx.StaticText(self, label="Zoom:"), flag=wx.ALIGN_CENTER)
+
+        btn_zoom_sizer = wx.BoxSizer(wx.HORIZONTAL)
+
+        btn_zoom_m = wx.Button(self, label="Zoom -")
+        btn_zoom_m.Bind(wx.EVT_BUTTON, self.on_zoom_m)
+        btn_zoom_sizer.Add(btn_zoom_m, flag=wx.ALL, border=4)
+
+        btn_zoom_p = wx.Button(self, label="Zoom +")
+        btn_zoom_p.Bind(wx.EVT_BUTTON, self.on_zoom_p)
+        btn_zoom_sizer.Add(btn_zoom_p, flag=wx.ALL, border=4)
+
+        sizer.Add(btn_zoom_sizer, flag=wx.ALIGN_CENTER)
+
         self.SetSizer(sizer)
+
+    def on_zoom_p(self, event):
+        if self.zoom_idx < len(self.zoom_steps)-1:
+            self.zoom_idx += 1
+        evt = ZoomAdjustEvent(zoom=self.zoom_steps[self.zoom_idx])
+        wx.PostEvent(self, evt)
+        self.Layout()
+
+    def on_zoom_m(self, event):
+        if self.zoom_idx > 0:
+            self.zoom_idx -= 1
+        evt = ZoomAdjustEvent(zoom=self.zoom_steps[self.zoom_idx])
+        wx.PostEvent(self, evt)
+        self.Layout()
 
     def on_brightness_change(self, event):
         self.brighness = self.brightness_ctl.GetValue()
