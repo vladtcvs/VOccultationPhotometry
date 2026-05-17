@@ -28,12 +28,13 @@ jobs:
         dist\voccultation-env\Scripts\python.exe -m pip install -e .
       shell: pwsh
 
-    - name: Create launcher script
+    - name: Create portable launcher script
       run: |
         @"
         @echo off
-        call "%~dp0voccultation-env\Scripts\activate.bat"
-        python -m voccultation %*
+        setlocal
+        "%%~dp0voccultation-env\Scripts\python.exe" -m voccultation %%*
+        endlocal
         "@ | Out-File -FilePath dist\voccultation.bat -Encoding ASCII
       shell: pwsh
 
