@@ -26,7 +26,23 @@ jobs:
     - name: Install python dependencies
       run: |
         python -m pip install --upgrade pip
-        python -m pip install pytest pillow scikit-image imutils pylint opencv-python numpy matplotlib wxpython
+        python -m pip install pytest pillow scikit-image imutils pylint opencv-python numpy matplotlib
+
+    - name: Cache wxpython
+      id: cache-wxpython
+      uses: actions/cache@v5
+      with:
+        path: wxpython-4.2.5-cp311-cp311-linux_x86_64.whl
+        key: ${{ runner.os }}-wxpython
+
+    - name: Generate wxPython wheel
+      if: steps.cache-wxpython.outputs.cache-hit != 'true'
+      run: |
+        python -m pip wheel wxpython==4.2.5
+  
+    - name: Install wxPython wheel
+      run: |
+        python -m pip install wxpython-4.2.5-cp311-cp311-linux_x86_64.whl
 
     - name: Install project
       run: |
