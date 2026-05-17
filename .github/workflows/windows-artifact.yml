@@ -1,0 +1,46 @@
+name: Windows Portable Artifact
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Create portable venv
+      run: |
+        python -m venv dist\voccultation-env
+        dist\voccultation-env\Scripts\python.exe -m pip install --upgrade pip
+        dist\voccultation-env\Scripts\python.exe -m pip install -e .
+      shell: pwsh
+
+    - name: Create launcher script
+      run: |
+        @"
+        @echo off
+        call "%~dp0voccultation-env\Scripts\activate.bat"
+        python -m voccultation %*
+        "@ | Out-File -FilePath dist\voccultation.bat -Encoding ASCII
+      shell: pwsh
+
+    - name: Package artifact
+      run: |
+        Compress-Archive -Path dist\* -DestinationPath voccultation-windows-portable.zip
+      shell: pwsh
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: voccultation-windows-portable
+        path: voccultation-windows-portable.zip
+        retention-days: 30
