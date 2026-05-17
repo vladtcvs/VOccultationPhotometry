@@ -1,16 +1,14 @@
-name: Windows Portable Artifact
+name: Windows Artifact
 
 on:
   push:
     branches: [ main ]
   pull_request:
     branches: [ main ]
-  release:
-    types: [published]
   workflow_dispatch:
 
 jobs:
-  build-windows:
+  build:
     runs-on: windows-latest
 
     steps:
@@ -21,31 +19,26 @@ jobs:
       with:
         python-version: '3.11'
 
-    - name: Create portable venv
+    - name: Install dependencies
       run: |
-        python -m venv dist\voccultation-env
-        dist\voccultation-env\Scripts\python.exe -m pip install --upgrade pip
-        dist\voccultation-env\Scripts\python.exe -m pip install -e .
-      shell: pwsh
+        python -m pip install --upgrade pip
+        python -m pip install pyinstaller pillow scikit-image imutils opencv-python numpy matplotlib wxpython
 
-    - name: Create portable launcher script
+    - name: Install project
       run: |
-        @"
-        @echo off
-        setlocal
-        "%%~dp0voccultation-env\Scripts\python.exe" -m voccultation %%*
-        endlocal
-        "@ | Out-File -FilePath dist\voccultation.bat -Encoding ASCII
-      shell: pwsh
+        python -m pip install --no-deps .
 
-    - name: Package artifact
+    - name: Build with PyInstaller
       run: |
-        Compress-Archive -Path dist\* -DestinationPath voccultation-windows-portable.zip
-      shell: pwsh
+        pyinstaller --windowed --name voccultation src/voccultation/__main__.py
+
+    - name: Zip artifact
+      run: |
+        Compress-Archive -Path dist\voccultation\* -DestinationPath voccultation-windows.zip
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
-        name: voccultation-windows-portable
-        path: voccultation-windows-portable.zip
+        name: voccultation-windows
+        path: voccultation-windows.zip
         retention-days: 30
