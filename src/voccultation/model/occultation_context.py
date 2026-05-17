@@ -32,9 +32,6 @@ from voccultation.methods import drift_profile, drift_slice
 #   INIT  -->  REFERENCE_SPECIFIED   (via specify_reference_track())
 #     |                 |
 #     |                 v
-#     |          SLICES_READY   (via build_occultation_profile())
-#     |                 |
-#     |                 v
 #     |          PROFILE_BUILT
 #     |                 |
 #     +---<-------------+   (via clear_reference_track() / reset())
@@ -48,8 +45,7 @@ class OccultationTrackContext:
     class ProfileState(enum.Enum):
         INIT = 0
         REFERENCE_SPECIFIED = 1
-        SLICES_READY = 2
-        PROFILE_BUILT = 3
+        PROFILE_BUILT = 2
 
     def __init__(self):
         self.image_state = self.ImageState.INIT
@@ -63,6 +59,7 @@ class OccultationTrackContext:
         self.reset()
 
     def set_image(self, gray : np.ndarray):
+        assert gray is not None
         self.image_state = self.ImageState.IMAGE_LOADED
         self.gray = gray
         self.reset()
@@ -160,7 +157,6 @@ class OccultationTrackContext:
                                               self.track.margin,
                                               0)
 
-        self.profile_state = self.ProfileState.SLICES_READY
         # profiles parallel to track
         for i in (-4,-2,2,4):
             offsetes_slice = drift_slice.slice_track(self.track.gray,
@@ -193,8 +189,7 @@ class OccultationTrackContext:
             self.image = None
 
         # occultation slices
-        if self.profile_state in [self.ProfileState.SLICES_READY,
-                                  self.ProfileState.PROFILE_BUILT]:
+        if self.profile_state is self.ProfileState.PROFILE_BUILT:
             assert self.slices is not None
             ref = self.slices.draw(self.half_w_profile)
             self.slices_image = ref[0]

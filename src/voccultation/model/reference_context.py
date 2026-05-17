@@ -94,6 +94,7 @@ class MeanReferenceTrackContext:
         return 0, 0
 
     def set_image(self, gray : np.ndarray):
+        assert gray is not None
         self.gray = gray
         self.reset()
         self.image_state = self.ImageState.IMAGE_LOADED
