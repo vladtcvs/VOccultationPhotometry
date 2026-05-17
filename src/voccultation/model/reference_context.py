@@ -12,6 +12,8 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 #
 
+import enum
+
 import numpy as np
 import uuid
 
@@ -25,8 +27,19 @@ class MeanReferenceTrackContext:
     This class provides functionality to handle reference drift tracks, compute a mean
     reference track.
     """
+    class ImageState(enum.Enum):
+        INIT = 0
+        IMAGE_LOADED = 1
+
+    class ProfileState(enum.Enum):
+        INIT = 0
+        RECTS_CONFIGURED = 1
+        MEAN_TRACK = 2
+
     def __init__(self):
-        self.gray : np.ndarray = None
+        self.image_state = self.ImageState.INIT
+        self.profile_state = self.ProfileState.INIT
+        self.gray : np.ndarray | None = None
         self.reset()
 
     def reset(self):
@@ -34,7 +47,7 @@ class MeanReferenceTrackContext:
         self.half_w_profile = 5
         self.half_w_cut = 15
         self.smooth = 1
-        self.track_orientation : TrackOrientation = None
+        self.track_orientation : TrackOrientation | None = None
         self.update_margin()
         self.clear_reference_tracks()
         self.clear_mean_track()
@@ -49,13 +62,13 @@ class MeanReferenceTrackContext:
 
     def clear_mean_track(self):
         """Clear the mean reference track data structures."""
-        self.mean_track : DriftTrack = None
-        self.mean_slices : DriftSlice = None
-        self.mean_profile : DriftProfile = None
-        self.mean_image : np.ndarray = None
-        self.mean_slices_image : np.ndarray = None
-        self.mean_slices_marks : np.ndarray = None
-        self.mean_plot : np.ndarray = None
+        self.mean_track : DriftTrack | None = None
+        self.mean_slices : DriftSlice | None = None
+        self.mean_profile : DriftProfile | None = None
+        self.mean_image : np.ndarray | None = None
+        self.mean_slices_image : np.ndarray | None = None
+        self.mean_slices_marks : np.ndarray | None = None
+        self.mean_plot : np.ndarray | None = None
 
     def update_rect_size(self, width, height):
         if len(self.track_rects) == 0:
@@ -65,7 +78,7 @@ class MeanReferenceTrackContext:
             rect.specify_size(width, height)
         self.build_mean_reference_track()
 
-    def specify_track_orientation(self, orientation : TrackOrientation):
+    def specify_track_orientation(self, orientation : TrackOrientation | None):
         self.track_orientation = orientation
         self.build_mean_reference_track()
 
@@ -83,6 +96,12 @@ class MeanReferenceTrackContext:
     def set_image(self, gray : np.ndarray):
         self.gray = gray
         self.reset()
+        self.image_state = self.ImageState.IMAGE_LOADED
+
+    def clear_image(self):
+        self.image_state = self.ImageState.INIT
+        self.gray = None
+        self.reset()
 
     def remove_track(self, guid : str):
         """
@@ -97,7 +116,12 @@ class MeanReferenceTrackContext:
             del self.profiles[guid]
         if guid in self.labels:
             del self.labels[guid]
-        self.build_mean_reference_track()
+
+        if len(self.track_rects) == 0:
+            self.profile_state = self.ProfileState.INIT
+            self.clear_mean_track()
+        else:
+            self.build_mean_reference_track()
 
     def create_new_track(self, guid : str, label : str, default_w : int, default_h : int):
         """
@@ -107,21 +131,27 @@ class MeanReferenceTrackContext:
             guid (str): A unique identifier for the new track.
             label (str): A descriptive label for the track.
         """
-        if self.gray is None:
+        if self.image_state is not self.ImageState.IMAGE_LOADED:
+            self.profile_state = self.ProfileState.INIT
             return
 
-        if len(self.track_rects) == 0:
+        assert self.gray is not None
+
+        if self.profile_state is self.ProfileState.INIT:
             w = default_w
             h = default_h
         else:
+            assert len(self.track_rects) > 0
             guid0 = list(self.track_rects.keys())[0]
             w = self.track_rects[guid0].w
             h = self.track_rects[guid0].h
+
         imgcx = self.gray.shape[1]//2
         imgcy = self.gray.shape[0]//2
         rect = DriftTrackRect(imgcx-w//2, imgcx-w//2+w-1, imgcy-h//2, imgcy-h//2+h-1)
         self.track_rects[guid] = rect
         self.labels[guid] = label
+        self.profile_state = self.ProfileState.RECTS_CONFIGURED
 
     def assign_label(self, guid : str, label : str):
         self.labels[guid] = label
@@ -129,12 +159,20 @@ class MeanReferenceTrackContext:
     def autodetect_tracks(self):
         self.clear_reference_tracks()
         self.clear_mean_track()
-        if self.gray is None:
+
+        if self.image_state is not self.ImageState.IMAGE_LOADED:
             return
+
+        assert self.gray is not None
         track_rects_list = tracks_detect.detect_reference_tracks(self.gray, 9, [2, 1.2])
+        if len(track_rects_list) == 0:
+            self.profile_state = self.ProfileState.INIT
+            return
+
         for rect in track_rects_list:
             new_guid = str(uuid.uuid4())
             self.track_rects[new_guid] = rect
+        self.profile_state = self.ProfileState.RECTS_CONFIGURED
 
     def set_half_w_cut(self, half_w : int):
         self.half_w_cut = half_w
@@ -149,9 +187,16 @@ class MeanReferenceTrackContext:
         self.update_margin()
 
     def build_mean_reference_track(self):
-        if len(self.track_rects) == 0:
+        if self.image_state is not self.ImageState.IMAGE_LOADED:
             self.clear_mean_track()
             return
+
+        if self.profile_state is self.ProfileState.INIT:
+            self.clear_mean_track()
+            return
+
+        assert self.gray is not None        
+        assert len(self.track_rects) > 0
 
         # build mean track
         ref_track_area, ref_path = build_mean_reference_track(self.gray,
@@ -192,15 +237,18 @@ class MeanReferenceTrackContext:
 
         # find mean reference profile
         self.mean_profile = drift_profile.calculate_reference_profile(list(self.profiles.values()))
+        self.profile_state = self.ProfileState.MEAN_TRACK
 
     def draw_tracks(self):
-        if self.mean_track is not None:
+        if self.profile_state is self.ProfileState.MEAN_TRACK:
+            assert self.mean_track is not None
             self.mean_image = self.mean_track.draw((255,0,0), (0,200,0), 0.5)
         else:
             self.mean_image = None
 
         # mean track slices
-        if self.mean_slices is not None:
+        if self.profile_state is self.ProfileState.MEAN_TRACK:
+            assert self.mean_slices is not None
             ref = self.mean_slices.draw(self.half_w_profile)
             self.mean_slices_image = ref[0]
             self.mean_slices_marks = ref[1]
@@ -209,7 +257,8 @@ class MeanReferenceTrackContext:
             self.mean_slices_marks = None
 
         # build reference profile plot
-        if self.mean_profile is not None:
+        if self.profile_state is self.ProfileState.MEAN_TRACK:
+            assert self.mean_profile is not None
             self.mean_plot = self.mean_profile.plot_profile(640, 480)
         else:
             self.mean_plot = None
