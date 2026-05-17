@@ -41,10 +41,11 @@ class DriftContext:
         self.observers : List[IObserver] = []
 
         self.image_state = self.ImageState.INIT
-        self.zoom = 1
+        self.zoom : int = 1
 
         # original frame
         self.gray : np.ndarray | None = None
+        self.rgb : np.ndarray | None = None
 
         # smoothing error of profiles
         self.smooth_err = 21
@@ -57,7 +58,6 @@ class DriftContext:
 
         self.display_brightness = 0
         self.display_contrast = 1
-        self.display_gamma = 1
 
         self.rect_width = 50
         self.rect_height = 100
@@ -161,7 +161,8 @@ class DriftContext:
         assert self.gray is not None
         gray = (self.gray.astype(np.float32) - 127) * self.display_contrast + 127 + self.display_brightness * 127
         gray = np.clip(gray, 0, 255)
-        
+        gray = cv2.resize(gray, (gray.shape[1]*self.zoom, gray.shape[0]*self.zoom), interpolation=cv2.INTER_NEAREST)
+
         self.rgb = cv2.cvtColor(gray.astype(np.uint8), cv2.COLOR_GRAY2RGB)
 
         # draw reference track line on each of reference tracks on original image
@@ -179,17 +180,22 @@ class DriftContext:
                                                   reference_track_rect.top,
                                                   (255,0,0),
                                                   (0,200,0),
-                                                  0.5)
+                                                  0.5,
+                                                  self.zoom)
 
                     if guid in self.reference_ctx.labels:
-                        x0 = reference_track_rect.left - 15
-                        y0 = reference_track_rect.top - 2
+                        x0 = reference_track_rect.left*self.zoom - 15
+                        y0 = reference_track_rect.top*self.zoom - 2
                         cv2.putText(self.rgb, self.reference_ctx.labels[guid],
                                     (x0, y0), cv2.FONT_HERSHEY_PLAIN, 1, (255, 0, 0))
 
                 # draw bounding rectangle
-                cv2.rectangle(self.rgb, (reference_track_rect.left, reference_track_rect.top),
-                                        (reference_track_rect.right, reference_track_rect.bottom),
+                left = reference_track_rect.left
+                top = reference_track_rect.top
+                right = reference_track_rect.right
+                bottom = reference_track_rect.bottom
+                cv2.rectangle(self.rgb, (left * self.zoom, top * self.zoom),
+                                        (right * self.zoom, bottom * self.zoom),
                                         color=(255,0,0), thickness=1)
 
         # draw occultation track
@@ -214,19 +220,24 @@ class DriftContext:
             occultation_track.draw_in_place(self.rgb,
                                             self.occultation_ctx.track_rect.left,
                                             self.occultation_ctx.track_rect.top,
-                                            (0,200,0), (0,200,0), 0.5)
+                                            (0,200,0), (0,200,0), 0.5,
+                                            self.zoom)
 
             # draw bounding rectangles
-            cv2.rectangle(self.rgb, (self.occultation_ctx.track_rect.left,
-                                     self.occultation_ctx.track_rect.top),
-                                    (self.occultation_ctx.track_rect.right,
-                                     self.occultation_ctx.track_rect.bottom),
+            left = self.occultation_ctx.track_rect.left
+            top = self.occultation_ctx.track_rect.top
+            right = self.occultation_ctx.track_rect.right
+            bottom = self.occultation_ctx.track_rect.bottom
+            cv2.rectangle(self.rgb, (left * self.zoom,  top * self.zoom),
+                                    (right * self.zoom, bottom * self.zoom),
                                     color=(0,200,0), thickness=1)
 
-            cv2.rectangle(self.rgb, (self.occultation_ctx.track_rect.left-self.occultation_ctx.margin,
-                                     self.occultation_ctx.track_rect.top-self.occultation_ctx.margin),
-                                    (self.occultation_ctx.track_rect.right+self.occultation_ctx.margin,
-                                     self.occultation_ctx.track_rect.bottom+self.occultation_ctx.margin),
+            left = self.occultation_ctx.track_rect.left-self.occultation_ctx.margin
+            top = self.occultation_ctx.track_rect.top-self.occultation_ctx.margin
+            right = self.occultation_ctx.track_rect.right+self.occultation_ctx.margin
+            bottom = self.occultation_ctx.track_rect.bottom+self.occultation_ctx.margin
+            cv2.rectangle(self.rgb, (left * self.zoom,  top * self.zoom),
+                                    (right * self.zoom, bottom * self.zoom),
                                     color=(0,200,0), thickness=1)
         self.notify_observers()
 
@@ -281,5 +292,10 @@ class DriftContext:
     def set_image_parameters(self, brightness, contrast):
         self.display_brightness = brightness
         self.display_contrast = contrast
+        self.display_tracks()
+        self.notify_observers()
+
+    def set_zoom(self, zoom : int):
+        self.zoom = zoom
         self.display_tracks()
         self.notify_observers()

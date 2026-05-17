@@ -16,7 +16,7 @@ import wx
 import wx.lib.scrolledpanel as scrolled
 
 from voccultation.model.data_context import DriftContext, IObserver
-from voccultation.ui.image_adjust_panel import ImageAdjustPanel, EVT_IMAGE_ADJUST
+from voccultation.ui.image_adjust_panel import ImageAdjustPanel, EVT_IMAGE_ADJUST, EVT_ZOOM_ADJUST
 from voccultation.ui.navigation_panel import EVT_NAVIGATION, NavigationPanel
 
 from voccultation.ui.track_selector import EVT_OCCULTATION_TRACK_PRESSED
@@ -32,10 +32,8 @@ class DetectTracksPanel(wx.Panel, IObserver):
         self.context = context
         self.context.add_observer(self)
         self.active_reference_track : str | None = None
-        self.zoom_steps = [1, 2, 4, 8]
-        self.zoom_idx = 0
 
-        self.context.zoom = self.zoom_steps[self.zoom_idx]
+        self.context.zoom = 1
 
         self.pos_status = "x:N/A y:N/A"
         self.zoom_status = "zoom:100%"
@@ -48,20 +46,6 @@ class DetectTracksPanel(wx.Panel, IObserver):
         image_box_sizer = wx.BoxSizer(wx.VERTICAL)
         image_box.SetSizer(image_box_sizer)
         main_sizer.Add(image_box, proportion=1, flag=wx.EXPAND | wx.ALL, border=8)
-
-        btn_zoom_sizer = wx.BoxSizer(wx.HORIZONTAL)
-
-        btn_zoom_p = wx.BitmapButton(image_box)
-        btn_zoom_p.SetBitmap(wx.ArtProvider.GetBitmap(wx.ART_PLUS))
-        btn_zoom_p.Bind(wx.EVT_BUTTON, self.on_zoom_p)
-        btn_zoom_sizer.Add(btn_zoom_p, flag=wx.ALL, border=4)
-
-        btn_zoom_m = wx.BitmapButton(image_box)
-        btn_zoom_m.SetBitmap(wx.ArtProvider.GetBitmap(wx.ART_MINUS))
-        btn_zoom_m.Bind(wx.EVT_BUTTON, self.on_zoom_m)
-        btn_zoom_sizer.Add(btn_zoom_m, flag=wx.ALL, border=4)
-
-        image_box_sizer.Add(btn_zoom_sizer, flag=wx.ALIGN_CENTER)
 
         image_panel = scrolled.ScrolledPanel(image_box)
         image_panel_sizer = wx.BoxSizer(wx.VERTICAL)
@@ -93,6 +77,7 @@ class DetectTracksPanel(wx.Panel, IObserver):
 
         image_adjust = ImageAdjustPanel(ctl_panel)
         image_adjust.Bind(EVT_IMAGE_ADJUST, self.OnImageAdjust)
+        image_adjust.Bind(EVT_ZOOM_ADJUST, self.OnZoomAdjust)
         ctl_sizer.Add(image_adjust, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALL, border=10)
 
         # Tracks
@@ -136,18 +121,6 @@ class DetectTracksPanel(wx.Panel, IObserver):
         except Exception as e:
             pass
 
-    def on_zoom_p(self, event):
-        if self.zoom_idx < len(self.zoom_steps)-1:
-            self.zoom_idx += 1
-        self.print_zoom_status(self.zoom_idx)
-        self.update_status()
-
-    def on_zoom_m(self, event):
-        if self.zoom_idx > 0:
-            self.zoom_idx -= 1
-        self.print_zoom_status(self.zoom_idx)
-        self.update_status()
-
     def update_dimensions(self):
         self.track_width_input.SetValue(str(self.context.rect_width))
         self.track_height_input.SetValue(str(self.context.rect_height))
@@ -182,21 +155,19 @@ class DetectTracksPanel(wx.Panel, IObserver):
     def _get_img_crds(self, event):
         x, y = event.GetPosition()
         ctl_w, ctl_h = self.image_ctrl.GetSize()
-        if self.context.gray is not None:
-            image_w = self.context.gray.shape[1]
-            image_h = self.context.gray.shape[0]
+        if self.context.rgb is not None:
+            image_w = self.context.rgb.shape[1]
+            image_h = self.context.rgb.shape[0]
             pad_x = max(0, (ctl_w-image_w)//2)
             pad_y = max(0, (ctl_h-image_h)//2)
             scroll_x, scroll_y = self.image_ctrl.GetPosition()
             x = x - scroll_x - pad_x
             y = y - scroll_y - pad_y
-            if x < 0 or y < 0 or x >= image_w or y >= image_h:
-                x = None
-                y = None
-        else:
-            x = None
-            y = None
-        return x, y
+            x = int(x / self.context.zoom + 0.5)
+            y = int(y / self.context.zoom + 0.5)
+            if x >= 0 and y >= 0 and x < image_w and y < image_h:
+                return x, y
+        return None, None
 
     def update_status(self):
         self.status.SetLabel(f"{self.pos_status} {self.zoom_status}")
@@ -212,9 +183,8 @@ class DetectTracksPanel(wx.Panel, IObserver):
         else:
             self.pos_status = f"x:{x} y:{y}"
 
-    def print_zoom_status(self, zoom_idx):
-        self.context.zoom = self.zoom_steps[zoom_idx]
-        self.zoom_status = f"zoom:{self.zoom_steps[zoom_idx]*100}%"
+    def print_zoom_status(self, zoom : int):
+        self.zoom_status = f"zoom:{zoom*100}%"
 
     def on_bitmap_click(self, event):
         x, y = self._get_img_crds(event)
@@ -233,6 +203,12 @@ class DetectTracksPanel(wx.Panel, IObserver):
         brightness = event.brightness
         contrast = event.contrast
         self.context.set_image_parameters(brightness, contrast)
+
+    def OnZoomAdjust(self, event):
+        zoom = event.zoom
+        self.print_zoom_status(zoom)
+        self.context.set_zoom(zoom)
+        self.update_status()
 
     def OnNavigate(self, event):
         dx = event.dx
@@ -268,9 +244,14 @@ class DetectTracksPanel(wx.Panel, IObserver):
         self.update_dimensions()
 
     def UpdateImage(self):
-        if self.context.gray is None:
+        if self.context.rgb is None:
+            empty_img = wx.EmptyBitmap(600, 600)
+            self.image_ctrl.SetBitmap(empty_img)
+            self.Layout()
+            self.Refresh()
+            self.image_ctrl.Refresh()
             return
-        height, width = self.context.gray.shape[:2]
+        height, width = self.context.rgb.shape[:2]
         if self.context.rgb is not None:
             data = self.context.rgb.tobytes()
             image = wx.Image(width, height)

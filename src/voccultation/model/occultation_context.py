@@ -184,7 +184,7 @@ class OccultationTrackContext:
     def draw_track(self):
         if self.profile_state is not self.ProfileState.INIT:
             assert self.track is not None
-            self.image = self.track.draw((0,200,0), (0,200,0), 0.5)
+            self.image = self.track.draw((0,200,0), (0,200,0), 0.5, 1)
         else:
             self.image = None
 

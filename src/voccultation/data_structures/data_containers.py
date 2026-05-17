@@ -161,14 +161,14 @@ class DriftTrack:
         self.w = self.gray.shape[1]-2*self.margin
         self.h = self.gray.shape[0]-2*self.margin
 
-    def draw(self, color : tuple, normals_color : tuple, transparency : float) -> np.ndarray:
+    def draw(self, color : tuple, normals_color : tuple, transparency : float, zoom : int) -> np.ndarray:
         gray = self.gray.astype(np.float32)
         amax = np.amax(gray)
         if amax > 0:
             gray = gray / amax * 255
 
         rgb = cv2.cvtColor(gray.astype(np.uint8), cv2.COLOR_GRAY2RGB)
-        return self.draw_in_place(rgb, 0, 0, color, normals_color, transparency)
+        return self.draw_in_place(rgb, 0, 0, color, normals_color, transparency, zoom)
 
     def draw_in_place(self,
                       rgb : np.ndarray,
@@ -176,29 +176,34 @@ class DriftTrack:
                       top : int,
                       path_color : tuple,
                       normals_color : tuple,
-                      transparency : float) -> np.ndarray:
-        path_color = np.array(path_color)
-
+                      transparency : float,
+                      zoom : int) -> np.ndarray:
         # draw points
-        if self.path is not None:
-            for y, x in self.path.points:
-                xx = int(x + left + self.margin)
-                yy = int(y + top + self.margin)
-                if xx < 0 or yy < 0 or xx >= rgb.shape[1] or yy >= rgb.shape[0]:
+        if self.path is not None and len(self.path.points) >= 2:
+            for idx in range(len(self.path.points)-1):
+                y1, x1 = self.path.points[idx]
+                y2, x2 = self.path.points[idx+1]
+                xx1 = int(x1 + left + self.margin)*zoom
+                yy1 = int(y1 + top + self.margin)*zoom
+                xx2 = int(x2 + left + self.margin)*zoom
+                yy2 = int(y2 + top + self.margin)*zoom
+                if xx1 < 0 or yy1 < 0 or xx1 >= rgb.shape[1] or yy1 >= rgb.shape[0]:
                     continue
-                rgb[yy, xx] = rgb[yy, xx] * transparency + path_color * (1-transparency)
-
+                if xx2 < 0 or yy2 < 0 or xx2 >= rgb.shape[1] or yy2 >= rgb.shape[0]:
+                    continue
+                cv2.line(rgb, (xx1,yy1), (xx2,yy2), path_color, 1)
+                
         # draw normals
         if self.path is not None:
             for index, ((y,x), (ny,nx)) in enumerate(zip(self.path.points, self.path.normals)):
                 if index % 10 != 0:
                     continue
-                x1 = int(x - nx*self.path.half_w + self.margin)
-                y1 = int(y - ny*self.path.half_w + self.margin)
-                x2 = int(x + nx*self.path.half_w + self.margin)
-                y2 = int(y + ny*self.path.half_w + self.margin)
+                x1 = int(x - nx*self.path.half_w + self.margin)*zoom
+                y1 = int(y - ny*self.path.half_w + self.margin)*zoom
+                x2 = int(x + nx*self.path.half_w + self.margin)*zoom
+                y2 = int(y + ny*self.path.half_w + self.margin)*zoom
 
-                cv2.line(rgb, (x1+left,y1+top), (x2+left,y2+top), normals_color, 1)
+                cv2.line(rgb, (x1+left*zoom,y1+top*zoom), (x2+left*zoom,y2+top*zoom), normals_color, 1)
         return rgb
 
 class DriftSlice:
