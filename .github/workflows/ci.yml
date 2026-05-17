@@ -14,9 +14,16 @@ jobs:
     - uses: actions/checkout@v4
 
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v6
       with:
         python-version: '3.11'
+
+    - name: Create and configure venv
+      run: |
+        python -m venv .venv --system-site-packages
+        source .venv/bin/activate
+        echo "PATH=$PATH" >> $GITHUB_ENV
+        echo "VIRTUAL_ENV=$VIRTUAL_ENV" >> $GITHUB_ENV
 
     - name: Install dependencies
       run: |
@@ -27,7 +34,7 @@ jobs:
     - name: Install python dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install pytest pillow scikit-image imutils pylint
+        python -m pip install pytest pillow scikit-image imutils pylint
 
     - name: Install project
       run: |
