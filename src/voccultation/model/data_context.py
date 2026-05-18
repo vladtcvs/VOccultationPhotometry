@@ -12,6 +12,12 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 #
 
+"""Main application context for drift track analysis and occultation detection.
+
+Defines the observer interface and DriftContext class that orchestrates image loading,
+reference/occultation track management, autodetection, profile building, and visualization.
+"""
+
 import abc
 import enum
 from typing import List
@@ -24,13 +30,22 @@ from voccultation.model.occultation_context import OccultationTrackContext
 from voccultation.model.reference_context import MeanReferenceTrackContext
 
 class IObserver:
+    """
+    Interface for observer pattern notification.
+    """
     @abc.abstractmethod
     def notify(self):
-        pass
+        """
+        Notify the observer of changes.
+        """
 
 class DriftContext:
+    """
+    Main context class managing drift tracking, reference tracks, and occultation analysis.
+    """
 
     class ImageState(enum.Enum):
+        """State of the loaded image."""
         INIT = 0
         IMAGE_LOADED = 1
 
@@ -63,6 +78,13 @@ class DriftContext:
         self.rect_height = 100
 
     def update_rect_size(self, width : int, height : int):
+        """
+        Update the size of reference rectangles and rebuild tracks.
+
+        Args:
+            width (int): New rectangle width.
+            height (int): New rectangle height.
+        """
         self.rect_width = width
         self.rect_height = height
         self.reference_ctx.update_rect_size(width, height)
@@ -104,6 +126,9 @@ class DriftContext:
         self.notify_observers()
 
     def clear_image(self):
+        """
+        Clear the loaded image and reset contexts.
+        """
         self.reference_ctx.clear_image()
         self.occultation_ctx.clear_image()
         self.gray = None
@@ -120,7 +145,7 @@ class DriftContext:
         """
         self.reference_ctx.set_half_w_cut(half_w)
         self.notify_observers()
-    
+
     def set_reference_half_w_profile(self, half_w : int):
         """
         Set the reference track half width value for track profile calculation.
@@ -164,39 +189,40 @@ class DriftContext:
         gray = cv2.resize(gray, (gray.shape[1]*self.zoom, gray.shape[0]*self.zoom), interpolation=cv2.INTER_NEAREST)
 
         self.rgb = cv2.cvtColor(gray.astype(np.uint8), cv2.COLOR_GRAY2RGB)
-
+        assert self.rgb is not None
         # draw reference track line on each of reference tracks on original image
         for guid in self.reference_ctx.track_rects:
-                reference_track_rect = self.reference_ctx.track_rects[guid]
-                # draw track
-                if self.reference_ctx.mean_track is not None:
-                    reference_track_area, _ = reference_track_rect.extract_track(gray, 0)
-                    reference_track = DriftTrack(reference_track_area,
-                                                 margin=0,
-                                                 path=self.reference_ctx.mean_track.path)
+            reference_track_rect = self.reference_ctx.track_rects[guid]
+            # draw track
+            if self.reference_ctx.mean_track is not None:
+                reference_track_area, _ = reference_track_rect.extract_track(gray, 0)
+                reference_track = DriftTrack(reference_track_area,
+                                             margin=0,
+                                             path=self.reference_ctx.mean_track.path)
 
-                    reference_track.draw_in_place(self.rgb,
-                                                  reference_track_rect.left,
-                                                  reference_track_rect.top,
-                                                  (255,0,0),
-                                                  (0,200,0),
-                                                  0.5,
-                                                  self.zoom)
+                reference_track.draw_in_place(self.rgb,
+                                              reference_track_rect.left,
+                                              reference_track_rect.top,
+                                              (255,0,0),
+                                              (0,200,0),
+                                              0.5,
+                                              self.zoom)
 
-                    if guid in self.reference_ctx.labels:
-                        x0 = reference_track_rect.left*self.zoom - 15
-                        y0 = reference_track_rect.top*self.zoom - 2
-                        cv2.putText(self.rgb, self.reference_ctx.labels[guid],
-                                    (x0, y0), cv2.FONT_HERSHEY_PLAIN, 1, (255, 0, 0))
+                if guid in self.reference_ctx.labels:
+                    x0 = reference_track_rect.left*self.zoom - 15
+                    y0 = reference_track_rect.top*self.zoom - 2
+                    cv2.putText(self.rgb, self.reference_ctx.labels[guid],
+                                (x0, y0), cv2.FONT_HERSHEY_PLAIN, 1, (255, 0, 0))
 
-                # draw bounding rectangle
-                left = reference_track_rect.left
-                top = reference_track_rect.top
-                right = reference_track_rect.right
-                bottom = reference_track_rect.bottom
-                cv2.rectangle(self.rgb, (left * self.zoom, top * self.zoom),
-                                        (right * self.zoom, bottom * self.zoom),
-                                        color=(255,0,0), thickness=1)
+            # draw bounding rectangle
+            left = reference_track_rect.left
+            top = reference_track_rect.top
+            right = reference_track_rect.right
+            bottom = reference_track_rect.bottom
+            cv2.rectangle(self.rgb,
+                          (left * self.zoom, top * self.zoom),
+                          (right * self.zoom, bottom * self.zoom),
+                          color=(255,0,0), thickness=1)
 
         # draw occultation track
         if self.occultation_ctx.profile_state in [OccultationTrackContext.ProfileState.REFERENCE_SPECIFIED,
@@ -242,6 +268,9 @@ class DriftContext:
         self.notify_observers()
 
     def draw_tracks(self):
+        """
+        Draw reference and occultation tracks.
+        """
         self.reference_ctx.draw_tracks()
         self.occultation_ctx.draw_track()
         self.display_tracks()
@@ -290,12 +319,25 @@ class DriftContext:
         self.notify_observers()
 
     def set_image_parameters(self, brightness, contrast):
+        """
+        Set display brightness and contrast, then refresh display.
+
+        Args:
+            brightness: Brightness offset.
+            contrast: Contrast multiplier.
+        """
         self.display_brightness = brightness
         self.display_contrast = contrast
         self.display_tracks()
         self.notify_observers()
 
     def set_zoom(self, zoom : int):
+        """
+        Set image zoom, then refresh display.
+
+        Args:
+            zoom: Zoom value
+        """
         self.zoom = zoom
         self.display_tracks()
         self.notify_observers()

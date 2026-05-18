@@ -11,13 +11,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 #
+"""Application entry point for VOccultation GUI."""
+
+import sys
+import wx
 
 from voccultation.model.data_context import DriftContext
 from voccultation.ui.ui import DriftWindow
-
-import wx
-import sys
-
 
 def main():
     context = DriftContext()

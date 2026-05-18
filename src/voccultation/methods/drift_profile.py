@@ -12,6 +12,12 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 #
 
+"""Functions for processing and analyzing drift profiles.
+
+Provides utilities to smooth profiles, calculate mean reference and sky profiles,
+and compensate drift profiles using references.
+"""
+
 from typing import List
 import numpy as np
 

@@ -12,6 +12,13 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 #
 
+"""Data containers for drift track analysis in voccultation.
+
+Defines rectangular regions (DriftTrackRect), paths (DriftTrackPath),
+tracks (DriftTrack), extracted slices (DriftSlice), and profiles (DriftProfile)
+for processing star drift tracks in images.
+"""
+
 from typing import Tuple
 import numpy as np
 import cv2
@@ -34,6 +41,15 @@ class DriftTrackRect:
         extract_track(gray, margin) -> Tuple[np.ndarray, np.ndarray]: Extract a track from an image.
     """
     def __init__(self, left : int, right : int, top : int, bottom : int):
+        """
+        Initialize a DriftTrackRect with the given coordinates.
+
+        Args:
+            left (int): The x-coordinate of the left edge.
+            right (int): The x-coordinate of the right edge.
+            top (int): The y-coordinate of the top edge.
+            bottom (int): The y-coordinate of the bottom edge.
+        """
         assert right > left, "right must be greater than left"
         assert bottom > top, "bottom must be greater than top"
 
@@ -45,21 +61,54 @@ class DriftTrackRect:
         self.h = self.bottom - self.top + 1
 
     def point_inside_rect(self, x : int, y : int) -> bool:
+        """
+        Check if a point is inside the rectangle.
+
+        Args:
+            x (int): The x-coordinate of the point.
+            y (int): The y-coordinate of the point.
+
+        Returns:
+            bool: True if the point is inside the rectangle, False otherwise.
+        """
         return x >= self.left and x <= self.right and y >= self.top and y <= self.bottom
 
     def specify_position(self, x : int, y : int):
+        """
+        Set the position of the rectangle while preserving its size.
+
+        Args:
+            x (int): The new x-coordinate of the left edge.
+            y (int): The new y-coordinate of the top edge.
+        """
         self.left = x
         self.top = y
         self.right = self.left + self.w - 1
         self.bottom = self.top + self.h - 1
 
     def specify_size(self, w : int, h : int):
+        """
+        Set the size of the rectangle while preserving its position.
+
+        Args:
+            w (int): The new width of the rectangle.
+            h (int): The new height of the rectangle.
+        """
         self.w = w
         self.h = h
         self.right = self.left + self.w - 1
         self.bottom = self.top + self.h - 1
 
     def detect_overlap(self, other) -> bool:
+        """
+        Detect overlap with another rectangle.
+
+        Args:
+            other (DriftTrackRect): The other rectangle to check for overlap.
+
+        Returns:
+            bool: True if there is overlap, False otherwise.
+        """
         other_ : DriftTrackRect = other
         if self.point_inside_rect(other_.left, other_.top):
             return True
@@ -72,6 +121,16 @@ class DriftTrackRect:
         return False
 
     def extract_track(self, gray : np.ndarray, margin : int) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Extract a track from an image with the given margin.
+
+        Args:
+            gray (np.ndarray): The input grayscale image.
+            margin (int): The margin around the rectangle.
+
+        Returns:
+            Tuple[np.ndarray, np.ndarray]: The extracted track and its mask.
+        """
         x0 = self.left-margin
         y0 = self.top-margin
         x1 = self.right+margin+1
@@ -79,7 +138,7 @@ class DriftTrackRect:
 
         tw = x1 - x0
         th = y1 - y0
-        
+
         x0_c = max(x0, 0)
         y0_c = max(y0, 0)
         x1_c = min(x1, gray.shape[1])
@@ -118,7 +177,15 @@ class DriftTrackPath:
     def __init__(self,
                  points : np.ndarray,
                  normals : np.ndarray | None,
-                 half_w : float):
+                 half_w : int | None):
+        """
+        Initialize a DriftTrackPath with points, normals, and half-width.
+
+        Args:
+            points (np.ndarray): Array of points [(y, x)].
+            normals (np.ndarray | None): Array of normals [(ny, nx)].
+            half_w (int): Half-width of the track.
+        """
         assert len(points.shape) == 2
         assert points.shape[1] == 2
 
@@ -152,6 +219,14 @@ class DriftTrack:
                  gray : np.ndarray,
                  margin : int,
                  path : DriftTrackPath):
+        """
+        Initialize a DriftTrack with image data, margin, and path.
+
+        Args:
+            gray (np.ndarray): The grayscale image data.
+            margin (int): Margin around the track.
+            path (DriftTrackPath): The path of points in the track.
+        """
         assert len(gray.shape) == 2
         assert margin >= 0
 
@@ -162,6 +237,18 @@ class DriftTrack:
         self.h = self.gray.shape[0]-2*self.margin
 
     def draw(self, color : tuple, normals_color : tuple, transparency : float, zoom : int) -> np.ndarray:
+        """
+        Draw the track and its normals.
+
+        Args:
+            color (tuple): Color for the path.
+            normals_color (tuple): Color for the normals.
+            transparency (float): Transparency value.
+            zoom (int): Zoom factor.
+
+        Returns:
+            np.ndarray: The RGB image with the track drawn.
+        """
         gray = self.gray.astype(np.float32)
         amax = np.amax(gray)
         if amax > 0:
@@ -178,6 +265,21 @@ class DriftTrack:
                       normals_color : tuple,
                       transparency : float,
                       zoom : int) -> np.ndarray:
+        """
+        Draw the track and its normals in place on the given RGB image.
+
+        Args:
+            rgb (np.ndarray): The RGB image to draw on.
+            left (int): Left offset.
+            top (int): Top offset.
+            path_color (tuple): Color for the path.
+            normals_color (tuple): Color for the normals.
+            transparency (float): Transparency value.
+            zoom (int): Zoom factor.
+
+        Returns:
+            np.ndarray: The modified RGB image.
+        """
         # draw points
         if self.path is not None and len(self.path.points) >= 2:
             for idx in range(len(self.path.points)-1):
@@ -192,9 +294,9 @@ class DriftTrack:
                 if xx2 < 0 or yy2 < 0 or xx2 >= rgb.shape[1] or yy2 >= rgb.shape[0]:
                     continue
                 cv2.line(rgb, (xx1,yy1), (xx2,yy2), path_color, 1)
-                
+
         # draw normals
-        if self.path is not None:
+        if self.path is not None and self.path.normals is not None:
             for index, ((y,x), (ny,nx)) in enumerate(zip(self.path.points, self.path.normals)):
                 if index % 10 != 0:
                     continue
@@ -221,15 +323,30 @@ class DriftSlice:
         plot_slices(w, h) -> np.ndarray: Plot multiple slices.
     """
     def __init__(self, slices : np.ndarray):
+        """
+        Initialize a DriftSlice with sliced data.
+
+        Args:
+            slices (np.ndarray): The 2D array of sliced data.
+        """
         assert len(slices.shape) == 2
 
         self.slices = slices
-        self.length = self.slices.shape[0] 
+        self.length = self.slices.shape[0]
         self.width = self.slices.shape[1]
         self.mask = 1-np.isnan(self.slices)
         self.slices[np.where(np.isnan(self.slices))] = 0
 
     def draw(self, used_width : int) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Draw the slice with optional width markers.
+
+        Args:
+            used_width (int): The width to mark on the slice.
+
+        Returns:
+            Tuple[np.ndarray, np.ndarray]: The RGB image and marks overlay.
+        """
         slices = self.slices.astype(np.float32)
         amax=np.amax(slices)
         if amax > 0:
@@ -246,13 +363,34 @@ class DriftSlice:
         return rgb, marks
 
     def plot_slice(self, w : int, h : int, layer : int) -> np.ndarray:
-        xr = range(self.width)
+        """
+        Plot a single slice layer.
+
+        Args:
+            w (int): Width of the plot.
+            h (int): Height of the plot.
+            layer (int): The layer index to plot.
+
+        Returns:
+            np.ndarray: The RGB plot image.
+        """
+        xr = np.array(range(self.width))
         values = self.slices[layer]
         rgb = plot_to_numpy(xr, [values], w, h)
         return rgb
 
     def plot_slices(self, w : int, h : int) -> np.ndarray:
-        xr = range(self.width)
+        """
+        Plot the mean, max, and min of all slices.
+
+        Args:
+            w (int): Width of the plot.
+            h (int): Height of the plot.
+
+        Returns:
+            np.ndarray: The RGB plot image.
+        """
+        xr = np.array(range(self.width))
         values = np.mean(self.slices, axis=0)
         top = np.amax(self.slices, axis=0)
         low = np.amin(self.slices, axis=0)
@@ -272,24 +410,51 @@ class DriftProfile:
         plot_profile_with_error(w, h) -> np.ndarray: Plot the profile and its error.
     """
     def __init__(self, profile : np.ndarray, error : np.ndarray | None):
-        assert(len(profile.shape) == 1)
+        """
+        Initialize a DriftProfile with profile data and optional error.
+
+        Args:
+            profile (np.ndarray): The 1D profile data.
+            error (np.ndarray | None): The error values for the profile.
+        """
+        assert len(profile.shape) == 1
 
         self.profile = profile
         self.length = self.profile.shape[0]
         if error is not None:
-            assert(error.shape == self.profile.shape)
+            assert error.shape == self.profile.shape
             self.error = error
         else:
             self.error = np.zeros(self.profile.shape)
 
     def plot_profile(self, w : int, h : int):
+        """
+        Plot the profile.
+
+        Args:
+            w (int): Width of the plot.
+            h (int): Height of the plot.
+
+        Returns:
+            np.ndarray: The RGB plot image.
+        """
         L = self.length
-        xr = range(L)
+        xr = np.array(list(range(L)))
         rgb = plot_to_numpy(xr, [self.profile], w, h)
         return rgb
 
     def plot_profile_with_error(self, w : int, h : int):
+        """
+        Plot the profile with error bounds.
+
+        Args:
+            w (int): Width of the plot.
+            h (int): Height of the plot.
+
+        Returns:
+            np.ndarray: The RGB plot image.
+        """
         L = self.length
-        xr = range(L)
+        xr = np.array(range(L))
         rgb = plot_to_numpy(xr, [self.profile, self.profile + self.error, self.profile - self.error], w, h)
         return rgb

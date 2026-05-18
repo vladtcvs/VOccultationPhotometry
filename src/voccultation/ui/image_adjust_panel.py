@@ -12,6 +12,12 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 #
 
+"""UI panel for adjusting image display parameters.
+
+Provides ImageAdjustPanel with controls for brightness, contrast, and zoom levels,
+posting custom events (ImageAdjustEvent, ZoomAdjustEvent) to notify listeners.
+"""
+
 import wx
 import wx.lib.newevent
 
@@ -66,27 +72,51 @@ class ImageAdjustPanel(wx.Panel):
 
         self.SetSizer(sizer)
 
-    def on_zoom_p(self, event):
+    def on_zoom_p(self, _event):
+        """
+        Handle zoom in button press.
+
+        Args:
+            event: The wx button event.
+        """
         if self.zoom_idx < len(self.zoom_steps)-1:
             self.zoom_idx += 1
         evt = ZoomAdjustEvent(zoom=self.zoom_steps[self.zoom_idx])
         wx.PostEvent(self, evt)
         self.Layout()
 
-    def on_zoom_m(self, event):
+    def on_zoom_m(self, _event):
+        """
+        Handle zoom out button press.
+
+        Args:
+            event: The wx button event.
+        """
         if self.zoom_idx > 0:
             self.zoom_idx -= 1
         evt = ZoomAdjustEvent(zoom=self.zoom_steps[self.zoom_idx])
         wx.PostEvent(self, evt)
         self.Layout()
 
-    def on_brightness_change(self, event):
+    def on_brightness_change(self, _event):
+        """
+        Handle brightness spin control change.
+
+        Args:
+            event: The wx spin control event.
+        """
         self.brighness = self.brightness_ctl.GetValue()
         evt = ImageAdjustEvent(brightness=self.brighness, contrast=self.contrast)
         wx.PostEvent(self, evt)
         self.Layout()
 
-    def on_contrast_change(self, event):
+    def on_contrast_change(self, _event):
+        """
+        Handle contrast spin control change.
+
+        Args:
+            event: The wx spin control event.
+        """
         self.contrast = self.contrast_ctl.GetValue()
         evt = ImageAdjustEvent(brightness=self.brighness, contrast=self.contrast)
         wx.PostEvent(self, evt)

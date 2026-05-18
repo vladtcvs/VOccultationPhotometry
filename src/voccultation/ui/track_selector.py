@@ -12,9 +12,15 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 #
 
+"""Track selection UI components.
+
+Defines LabelManager and TrackSelector panel for managing occultation vs.
+reference track selection, custom events, and dynamic button layout.
+"""
+
+import uuid
 import wx
 import wx.lib.newevent
-import uuid
 
 # Define custom event types
 OccultationPressedEvent, EVT_OCCULTATION_TRACK_PRESSED = wx.lib.newevent.NewEvent()
@@ -23,13 +29,31 @@ RemoveTrackPressedEvent, EVT_REMOVE_TRACK_PRESSED = wx.lib.newevent.NewEvent()
 TracksUpdated, EVT_TRACKS_UPDATED = wx.lib.newevent.NewEvent()
 
 class LabelManager:
+    """
+    Manages labels for reference tracks using GUIDs.
+    """
     def __init__(self):
+        """
+        Initialize the LabelManager.
+        """
         self.guids = {}
 
     def clear(self):
+        """
+        Clear all GUID mappings.
+        """
         self.guids.clear()
 
     def add_new_guid(self, guid : str) -> str:
+        """
+        Add a new GUID and return its label.
+
+        Args:
+            guid (str): The GUID to add.
+
+        Returns:
+            str: The label for the GUID.
+        """
         if guid in self.guids:
             return str(self.guids[guid])
 
@@ -38,20 +62,44 @@ class LabelManager:
         return f"#{newid}"
 
     def remove_guid(self, guid : str):
+        """
+        Remove a GUID and update remaining labels.
+
+        Args:
+            guid (str): The GUID to remove.
+        """
         if guid not in self.guids:
             return
 
-        id = self.guids[guid]
-        for guid_it in self.guids.keys():
-            if self.guids[guid_it] > id:
+        index = self.guids[guid]
+        for guid_it in self.guids:
+            if self.guids[guid_it] > index:
                 self.guids[guid_it] -= 1
         del self.guids[guid]
 
     def guid_label(self, guid : str) -> str:
+        """
+        Get the label for a given GUID.
+
+        Args:
+            guid (str): The GUID.
+
+        Returns:
+            str: The label string.
+        """
         return f"#{self.guids[guid]}"
 
 class TrackSelector(wx.Panel):
+    """
+    Panel for selecting between occultation and reference tracks.
+    """
     def __init__(self, parent):
+        """
+        Initialize the TrackSelector panel.
+
+        Args:
+            parent: The parent window.
+        """
         super().__init__(parent)
         self.active_guid : str | None = None
         self.sizer = wx.BoxSizer(wx.VERTICAL)
@@ -73,6 +121,7 @@ class TrackSelector(wx.Panel):
         dc.SelectObject(wx.NullBitmap)
         mask = wx.Mask(self.active_bmp, wx.WHITE)
         self.active_bmp.SetMask(mask)
+        self.active_bmp_bundle = wx.BitmapBundle(self.active_bmp)
 
         self.non_active_bmp = wx.Bitmap(16, 16)
         dc.SelectObject(self.non_active_bmp)
@@ -84,40 +133,65 @@ class TrackSelector(wx.Panel):
         dc.SelectObject(wx.NullBitmap)
         mask = wx.Mask(self.non_active_bmp, wx.WHITE)
         self.non_active_bmp.SetMask(mask)
+        self.non_active_bmp_bundle = wx.BitmapBundle(self.non_active_bmp)
 
-        self.occultation_button.SetBitmapLabel(self.active_bmp)
+        self.occultation_button.SetBitmapLabel(self.active_bmp_bundle)
         self.active_guid = None
 
-    def on_occultation_pressed(self, event):
+    def on_occultation_pressed(self, _event):
+        """
+        Handle occultation track button press.
+
+        Args:
+            event: The wx event.
+        """
         self.active_guid = None
         self.select_occultation_track()
         wx.PostEvent(self, OccultationPressedEvent())
 
     def select_guid_reference_track(self, guid):
+        """
+        Select a reference track by GUID.
+
+        Args:
+            guid (str): The GUID of the track to select.
+        """
         if guid in self.reference_tracks:
-            for iter_guid in self.reference_tracks.keys():
-                btn_ref, _, _ = self.reference_tracks[iter_guid]
+            for guid_it in self.reference_tracks:
+                btn_ref, _, _ = self.reference_tracks[guid_it]
                 btn_ref : wx.Button = btn_ref
-                if guid == iter_guid:
-                    btn_ref.SetBitmapLabel(self.active_bmp)
+                if guid == guid_it:
+                    btn_ref.SetBitmapLabel(self.active_bmp_bundle)
                 else:
-                    btn_ref.SetBitmapLabel(self.non_active_bmp)
-            self.occultation_button.SetBitmapLabel(self.non_active_bmp)
+                    btn_ref.SetBitmapLabel(self.non_active_bmp_bundle)
+            self.occultation_button.SetBitmapLabel(self.non_active_bmp_bundle)
 
     def select_occultation_track(self):
-        for iter_guid in self.reference_tracks.keys():
-            btn_ref, _, _ = self.reference_tracks[iter_guid]
+        """
+        Select the occultation track and deselect all reference tracks.
+        """
+        for guid_it in self.reference_tracks:
+            btn_ref, _, _ = self.reference_tracks[guid_it]
             btn_ref : wx.Button = btn_ref
-            btn_ref.SetBitmapLabel(self.non_active_bmp)
-        self.occultation_button.SetBitmapLabel(self.active_bmp)
+            btn_ref.SetBitmapLabel(self.non_active_bmp_bundle)
+        self.occultation_button.SetBitmapLabel(self.active_bmp_bundle)
 
     def add_new_reference_track(self, guid = None):
+        """
+        Add a new reference track button.
+
+        Args:
+            guid (str, optional): GUID for the track. If None, a new one is generated.
+
+        Returns:
+            str: The GUID of the added track.
+        """
         if guid is None:
             guid = str(uuid.uuid4())
         h_sizer = wx.BoxSizer(wx.HORIZONTAL)
         new_label = self.track_labels.add_new_guid(guid)
         btn_ref = wx.Button(self, label=f"Reference track {new_label}")
-        btn_ref.SetBitmapLabel(self.non_active_bmp)
+        btn_ref.SetBitmapLabel(self.non_active_bmp_bundle)
         btn_remove = wx.Button(self, label="X")
         h_sizer.Add(btn_ref, proportion=0, flag=wx.ALL, border=8)
         h_sizer.Add(btn_remove, proportion=0, flag=wx.ALL, border=8)
@@ -130,17 +204,37 @@ class TrackSelector(wx.Panel):
         wx.PostEvent(self, evt)
         return guid
 
-    def on_reference_pressed(self, event, guid):
+    def on_reference_pressed(self, _event, guid):
+        """
+        Handle reference track button press.
+
+        Args:
+            event: The wx event.
+            guid (str): The GUID of the pressed track.
+        """
         evt = ReferencePressedEvent(guid=guid)
         self.select_guid_reference_track(guid)
         self.active_guid = guid
         wx.PostEvent(self, evt)
 
-    def on_remove_pressed(self, event, guid):
+    def on_remove_pressed(self, _event, guid):
+        """
+        Handle remove track button press.
+
+        Args:
+            event: The wx event.
+            guid (str): The GUID of the track to remove.
+        """
         evt = RemoveTrackPressedEvent(guid=guid)
         wx.PostEvent(self, evt)
 
     def remove_reference_track(self, guid):
+        """
+        Remove a reference track by GUID.
+
+        Args:
+            guid (str): The GUID of the track to remove.
+        """
         if guid in self.reference_tracks:
             btn_ref, btn_remove, h_sizer = self.reference_tracks[guid]
             self.Unbind(wx.EVT_BUTTON, btn_ref)
@@ -165,8 +259,11 @@ class TrackSelector(wx.Panel):
             wx.PostEvent(self, evt)
 
     def clear(self):
-        for guid in self.reference_tracks.keys():
-            btn_ref, btn_remove, h_sizer = self.reference_tracks[guid]
+        """
+        Clear all reference tracks.
+        """
+        for guid_it in self.reference_tracks:
+            btn_ref, btn_remove, h_sizer = self.reference_tracks[guid_it]
             self.Unbind(wx.EVT_BUTTON, btn_ref)
             self.Unbind(wx.EVT_BUTTON, btn_remove)
             self.sizer.Remove(h_sizer)
@@ -178,5 +275,11 @@ class TrackSelector(wx.Panel):
         evt = TracksUpdated()
         wx.PostEvent(self, evt)
 
-    def guids(self):
-        return dict(self.reference_track_ids)
+    def guids(self) -> list[str]:
+        """
+        Get the list of all reference track GUIDs.
+
+        Returns:
+            list[str]: List of GUIDs.
+        """
+        return list(self.reference_tracks.keys())

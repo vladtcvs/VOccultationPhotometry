@@ -12,6 +12,12 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 #
 
+"""UI panel for detecting, editing, and managing reference/occultation tracks.
+
+Implements DetectTracksPanel with image display, auto-detection, manual track
+placement, zoom/contrast controls, and integration with the drift analysis context.
+"""
+
 import wx
 import wx.lib.scrolledpanel as scrolled
 
@@ -26,7 +32,18 @@ from voccultation.ui.track_selector import EVT_TRACKS_UPDATED
 from voccultation.ui.track_selector import TrackSelector
 
 class DetectTracksPanel(wx.Panel, IObserver):
+    """
+    Panel for detecting and managing reference and occultation tracks.
+    """
     def __init__(self, parent, context : DriftContext, status : wx.StaticText):
+        """
+        Initialize the DetectTracksPanel.
+
+        Args:
+            parent: The parent window.
+            context (DriftContext): The data context.
+            status (wx.StaticText): Status bar text control.
+        """
         wx.Panel.__init__(self, parent)
         self.status = status
         self.context = context
@@ -51,7 +68,9 @@ class DetectTracksPanel(wx.Panel, IObserver):
         main_sizer.Add(image_panel, proportion=1, flag=wx.EXPAND)
 
         empty_img = wx.Image(600, 600)
-        self.image_ctrl = wx.StaticBitmap(image_panel, wx.ID_ANY , wx.Bitmap(empty_img))
+        self.image_ctrl = wx.StaticBitmap(image_panel,
+                                          wx.ID_ANY,
+                                          wx.BitmapBundle.FromBitmap(wx.Bitmap(empty_img)))
         self.image_ctrl.Bind(wx.EVT_LEFT_DOWN, self.on_bitmap_click)
         self.image_ctrl.Bind(wx.EVT_MOTION, self.on_mouse_move)
 
@@ -64,28 +83,28 @@ class DetectTracksPanel(wx.Panel, IObserver):
         ctl_panel.SetSizer(ctl_sizer)
 
         auto_detect_references = wx.Button(ctl_panel, label="Auto detect references")
-        auto_detect_references.Bind(wx.EVT_BUTTON, self.AutoDetectTracks)
+        auto_detect_references.Bind(wx.EVT_BUTTON, self.on_auto_detect_tracks)
         ctl_sizer.Add(auto_detect_references, proportion=0, flag=wx.EXPAND | wx.ALL, border=10)
 
         navigator = NavigationPanel(ctl_panel)
-        navigator.Bind(EVT_NAVIGATION, self.OnNavigate)
+        navigator.Bind(EVT_NAVIGATION, self.on_navigate)
         ctl_sizer.Add(navigator, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALL, border=10)
 
         image_adjust = ImageAdjustPanel(ctl_panel)
-        image_adjust.Bind(EVT_IMAGE_ADJUST, self.OnImageAdjust)
-        image_adjust.Bind(EVT_ZOOM_ADJUST, self.OnZoomAdjust)
+        image_adjust.Bind(EVT_IMAGE_ADJUST, self.on_image_adjust)
+        image_adjust.Bind(EVT_ZOOM_ADJUST, self.on_zoom_adjust)
         ctl_sizer.Add(image_adjust, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALL, border=10)
 
         # Tracks
         self.track_selector = TrackSelector(ctl_panel)
-        self.track_selector.Bind(EVT_REMOVE_TRACK_PRESSED, self.RemoveReference)
-        self.track_selector.Bind(EVT_OCCULTATION_TRACK_PRESSED, self.SelectOccultation)
-        self.track_selector.Bind(EVT_REFERENCE_TRACK_PRESSED, self.SelectReference)
-        self.track_selector.Bind(EVT_TRACKS_UPDATED, self.TracksUpdated)
+        self.track_selector.Bind(EVT_REMOVE_TRACK_PRESSED, self.on_remove_reference)
+        self.track_selector.Bind(EVT_OCCULTATION_TRACK_PRESSED, self.on_select_occultation)
+        self.track_selector.Bind(EVT_REFERENCE_TRACK_PRESSED, self.on_select_reference)
+        self.track_selector.Bind(EVT_TRACKS_UPDATED, self.on_tracks_updated)
         ctl_sizer.Add(self.track_selector,  0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALL, border=10)
 
         add_new_reference = wx.Button(ctl_panel, label="New reference")
-        add_new_reference.Bind(wx.EVT_BUTTON, self.AddNewReference)
+        add_new_reference.Bind(wx.EVT_BUTTON, self.on_add_new_reference)
         ctl_sizer.Add(add_new_reference, proportion=0, flag=wx.EXPAND | wx.ALL, border=10)
 
         w_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -95,7 +114,7 @@ class DetectTracksPanel(wx.Panel, IObserver):
         w_sizer.Add(label)
         self.track_width_input = wx.SpinCtrl(ctl_panel, min=20, max=500)
         self.track_width_input.SetValue(str(self.context.rect_width))
-        self.track_width_input.Bind(wx.EVT_SPINCTRL, self.TrackDimensions)
+        self.track_width_input.Bind(wx.EVT_SPINCTRL, self.on_track_dimensions)
         w_sizer.Add(self.track_width_input)
 
         h_sizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -105,40 +124,79 @@ class DetectTracksPanel(wx.Panel, IObserver):
         h_sizer.Add(label)
         self.track_height_input = wx.SpinCtrl(ctl_panel, min=20, max=500)
         self.track_height_input.SetValue(str(self.context.rect_height))
-        self.track_height_input.Bind(wx.EVT_SPINCTRL, self.TrackDimensions)
+        self.track_height_input.Bind(wx.EVT_SPINCTRL, self.on_track_dimensions)
         h_sizer.Add(self.track_height_input)
 
         main_sizer.Add(ctl_panel, proportion=0, flag=wx.ALL | wx.EXPAND, border=8)
 
-    def TrackDimensions(self, event):
+    def on_track_dimensions(self, _event):
+        """
+        Handle track dimension input changes.
+
+        Args:
+            event: The wx spin control event.
+        """
         try:
             self.context.update_rect_size(int(self.track_width_input.GetValue()),
                                           int(self.track_height_input.GetValue()))
-        except Exception as e:
+        except Exception as _e:
             pass
 
     def update_dimensions(self):
+        """
+        Update the track width/height input controls from context.
+        """
         self.track_width_input.SetValue(str(self.context.rect_width))
         self.track_height_input.SetValue(str(self.context.rect_height))
 
-    def SelectReference(self, event):
+    def on_select_reference(self, event):
+        """
+        Select a reference track for editing.
+
+        Args:
+            event: The custom event containing the GUID.
+        """
         self.active_reference_track = event.guid
 
-    def SelectOccultation(self, event):
+    def on_select_occultation(self, _event):
+        """
+        Select the occultation track for editing.
+
+        Args:
+            event: The custom event.
+        """
         self.active_reference_track = None
 
-    def RemoveReference(self, event):
+    def on_remove_reference(self, event):
+        """
+        Remove a reference track.
+
+        Args:
+            event: The custom remove event containing the GUID.
+        """
         guid = event.guid
         self.context.reference_ctx.remove_track(guid)
         self.track_selector.remove_reference_track(guid)
         self.Layout()
 
-    def TracksUpdated(self, event):
+    def on_tracks_updated(self, _event):
+        """
+        Handle track list update event.
+
+        Args:
+            event: The custom tracks updated event.
+        """
         for guid in self.context.reference_ctx.track_rects.keys():
             self.context.reference_ctx.assign_label(guid, self.track_selector.track_labels.guid_label(guid))
         self.context.build_mean_reference_track()
 
-    def AddNewReference(self, event):
+    def on_add_new_reference(self, _event):
+        """
+        Add a new reference track.
+
+        Args:
+            event: The wx button event.
+        """
         if self.context.gray is None:
             return
         guid = self.track_selector.add_new_reference_track()
@@ -149,6 +207,15 @@ class DetectTracksPanel(wx.Panel, IObserver):
         self.track_selector.select_guid_reference_track(guid)
 
     def _get_img_crds(self, event):
+        """
+        Convert mouse event coordinates to image coordinates.
+
+        Args:
+            event: The wx mouse event.
+
+        Returns:
+            Tuple[int, int] or (None, None): Image coordinates.
+        """
         x, y = event.GetPosition()
         ctl_w, ctl_h = self.image_ctrl.GetSize()
         if self.context.rgb is not None:
@@ -166,23 +233,51 @@ class DetectTracksPanel(wx.Panel, IObserver):
         return None, None
 
     def update_status(self):
+        """
+        Update the status bar text.
+        """
         self.status.SetLabel(f"{self.pos_status} {self.zoom_status}")
 
     def on_mouse_move(self, event):
+        """
+        Handle mouse movement over the image.
+
+        Args:
+            event: The wx mouse event.
+        """
         x, y = self._get_img_crds(event)
         self.print_pos_status(x, y)
         self.update_status()
 
     def print_pos_status(self, x, y):
+        """
+        Update position status string.
+
+        Args:
+            x (int): X coordinate.
+            y (int): Y coordinate.
+        """
         if x is None or y is None:
             self.pos_status = f"x:N/A y:N/A"
         else:
             self.pos_status = f"x:{x} y:{y}"
 
     def print_zoom_status(self, zoom : int):
+        """
+        Update zoom status string.
+
+        Args:
+            zoom (int): Current zoom level.
+        """
         self.zoom_status = f"zoom:{zoom*100}%"
 
     def on_bitmap_click(self, event):
+        """
+        Handle click on the image bitmap.
+
+        Args:
+            event: The wx mouse event.
+        """
         x, y = self._get_img_crds(event)
         if x is None or y is None:
             return
@@ -195,18 +290,36 @@ class DetectTracksPanel(wx.Panel, IObserver):
 
         self.context.display_tracks()
 
-    def OnImageAdjust(self, event):
+    def on_image_adjust(self, event):
+        """
+        Handle image brightness/contrast adjustment event.
+
+        Args:
+            event: The image adjust event.
+        """
         brightness = event.brightness
         contrast = event.contrast
         self.context.set_image_parameters(brightness, contrast)
 
-    def OnZoomAdjust(self, event):
+    def on_zoom_adjust(self, event):
+        """
+        Handle zoom adjustment event.
+
+        Args:
+            event: The zoom adjust event.
+        """
         zoom = event.zoom
         self.print_zoom_status(zoom)
         self.context.set_zoom(zoom)
         self.update_status()
 
-    def OnNavigate(self, event):
+    def on_navigate(self, event):
+        """
+        Handle navigation (arrow) events.
+
+        Args:
+            event: The navigation event.
+        """
         dx = event.dx
         dy = event.dy
         if self.active_reference_track is None:
@@ -220,7 +333,13 @@ class DetectTracksPanel(wx.Panel, IObserver):
             self.context.build_mean_reference_track()
         self.context.display_tracks()
 
-    def AutoDetectTracks(self, event):
+    def on_auto_detect_tracks(self, _event):
+        """
+        Handle auto-detect tracks button press.
+
+        Args:
+            event: The wx button event.
+        """
         self.track_selector.clear()
         if self.context.gray is None:
             return
@@ -239,7 +358,10 @@ class DetectTracksPanel(wx.Panel, IObserver):
         self.context.build_occultation_track()
         self.update_dimensions()
 
-    def UpdateImage(self):
+    def update_image(self):
+        """
+        Update the displayed image from context.
+        """
         if self.context.rgb is None:
             empty_img = wx.EmptyBitmap(600, 600)
             self.image_ctrl.SetBitmap(empty_img)
@@ -259,4 +381,7 @@ class DetectTracksPanel(wx.Panel, IObserver):
             self.image_ctrl.Refresh()
 
     def notify(self):
-        self.UpdateImage()
+        """
+        Observer notification to update the image.
+        """
+        self.update_image()

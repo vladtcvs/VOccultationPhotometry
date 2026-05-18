@@ -12,6 +12,12 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 #
 
+"""Build mean reference tracks from multiple rectangular track regions.
+
+Provides functions to average tracks, detect brightest points to form paths,
+smooth the resulting points, and construct DriftTrackPath objects.
+"""
+
 from enum import Enum
 import numpy as np
 from typing import List, Tuple
@@ -74,14 +80,14 @@ def _mean_track_to_points(track : np.ndarray,
     if orientation == TrackOrientation.TRACK_HORIZONTAL:
         # horizontal track
         for x in range(margin, w-margin):
-            slice = track[:,x]
-            maximum = int(slice.argmax())
+            single_slice = track[:,x]
+            maximum = int(single_slice.argmax())
             points.append((maximum-margin, x-margin))
     else:
         # vertical track
         for y in range(margin, h-margin):
-            slice = track[y,:]
-            maximum = int(slice.argmax())
+            single_slice = track[y,:]
+            maximum = int(single_slice.argmax())
             points.append((y-margin,maximum-margin))
 
     return np.array(points), orientation

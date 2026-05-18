@@ -12,12 +12,27 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 #
 
+"""Navigation panel with directional arrow buttons.
+
+Provides NavigationPanel for fine-tuning track positions via repeated button presses,
+posting NavigationEvent with dx/dy deltas.
+"""
+
 import wx
 import wx.lib.newevent
 NavigationEvent, EVT_NAVIGATION = wx.lib.newevent.NewEvent()
 
 class NavigationPanel(wx.Panel):
+    """
+    Panel with navigation buttons for moving the track position.
+    """
     def __init__(self, parent):
+        """
+        Initialize the NavigationPanel.
+
+        Args:
+            parent: The parent window.
+        """
         wx.Panel.__init__(self, parent)
         ctl_btn_sizer = wx.GridSizer(cols=3, rows=3, hgap=10, vgap=10)
         self.SetSizer(ctl_btn_sizer)
@@ -33,25 +48,25 @@ class NavigationPanel(wx.Panel):
 
         # Up arrow (top row, middle column: row 0, col 1)
         up_bitmap = wx.ArtProvider.GetBitmap(wx.ART_GO_UP, wx.ART_BUTTON, size)
-        up_button = wx.BitmapButton(self, id=wx.ID_ANY, bitmap=up_bitmap, size=(40, 40))
+        up_button = wx.BitmapButton(self, id=wx.ID_ANY, bitmap=up_bitmap, size=wx.Size(40, 40))
         up_button.Bind(wx.EVT_LEFT_DOWN, self.on_up)
         up_button.Bind(wx.EVT_LEFT_UP, self.on_release)
 
         # Left arrow (middle row, left column: row 1, col 0)
         left_bitmap = wx.ArtProvider.GetBitmap(wx.ART_GO_BACK, wx.ART_BUTTON, size)
-        left_button = wx.BitmapButton(self, id=wx.ID_ANY, bitmap=left_bitmap, size=(40, 40))
+        left_button = wx.BitmapButton(self, id=wx.ID_ANY, bitmap=left_bitmap, size=wx.Size(40, 40))
         left_button.Bind(wx.EVT_LEFT_DOWN, self.on_left)
         left_button.Bind(wx.EVT_LEFT_UP, self.on_release)
 
         # Right arrow (middle row, right column: row 1, col 2)
         right_bitmap = wx.ArtProvider.GetBitmap(wx.ART_GO_FORWARD, wx.ART_BUTTON, size)
-        right_button = wx.BitmapButton(self, id=wx.ID_ANY, bitmap=right_bitmap, size=(40, 40))
+        right_button = wx.BitmapButton(self, id=wx.ID_ANY, bitmap=right_bitmap, size=wx.Size(40, 40))
         right_button.Bind(wx.EVT_LEFT_DOWN, self.on_right)
         right_button.Bind(wx.EVT_LEFT_UP, self.on_release)
 
         # Bottom arrow (bottom row, middle column: row 2, col 1)
         down_bitmap = wx.ArtProvider.GetBitmap(wx.ART_GO_DOWN, wx.ART_BUTTON, size)
-        down_button = wx.BitmapButton(self, id=wx.ID_ANY, bitmap=down_bitmap, size=(40, 40))
+        down_button = wx.BitmapButton(self, id=wx.ID_ANY, bitmap=down_bitmap, size=wx.Size(40, 40))
         down_button.Bind(wx.EVT_LEFT_DOWN, self.on_down)
         down_button.Bind(wx.EVT_LEFT_UP, self.on_release)
 
@@ -70,43 +85,82 @@ class NavigationPanel(wx.Panel):
         ctl_btn_sizer.Add(down_button, 0, wx.ALIGN_CENTER)  # Bottom button (row 2, col 1)
         ctl_btn_sizer.Add((0, 0), 0, wx.EXPAND)  # Empty (row 2, col 2)
 
-    def on_timer(self, event):
+    def on_timer(self, _event):
+        """
+        Handle timer events for repeated navigation.
+
+        Args:
+            event: The wx timer event.
+        """
         if self.held_x != 0 or self.held_y != 0:
             self._notify()
             self.timer.Start(self.repeat_delay, oneShot=True)
 
-    def on_up(self, event):
+    def on_up(self, _event):
+        """
+        Handle up button press.
+
+        Args:
+            event: The wx mouse event.
+        """
         self.held_x = 0
         self.held_y = -1
         self._notify()
         self.timer.Start(self.first_delay, oneShot=True)
         self.Layout()
 
-    def on_left(self, event):
+    def on_left(self, _event):
+        """
+        Handle left button press.
+
+        Args:
+            event: The wx mouse event.
+        """
         self.held_x = -1
         self.held_y = 0
         self._notify()
         self.timer.Start(self.first_delay, oneShot=True)
         self.Layout()
 
-    def on_right(self, event):
+    def on_right(self, _event):
+        """
+        Handle right button press.
+
+        Args:
+            event: The wx mouse event.
+        """
         self.held_x = 1
         self.held_y = 0
         self._notify()
         self.timer.Start(self.first_delay, oneShot=True)
         self.Layout()
 
-    def on_down(self, event):
+    def on_down(self, _event):
+        """
+        Handle down button press.
+
+        Args:
+            event: The wx mouse event.
+        """
         self.held_x = 0
         self.held_y = 1
         self._notify()
         self.timer.Start(self.first_delay, oneShot=True)
         self.Layout()
 
-    def on_release(self, event):
+    def on_release(self, _event):
+        """
+        Handle button release to stop navigation.
+
+        Args:
+            event: The wx mouse event.
+        """
         self.held_x = 0
         self.held_y = 0
 
     def _notify(self):
+        """
+        Post a navigation event with current held direction.
+        """
         evt = NavigationEvent(dx=self.held_x, dy=self.held_y)
         wx.PostEvent(self, evt)

@@ -12,20 +12,26 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 #
 
-from typing import List
+"""Track detection utilities for identifying star drift tracks in images.
+
+Implements bold track detection via thresholding and morphology, followed by
+overlap removal, size filtering, alignment, and reference track selection.
+"""
+
+import statistics
+
 import numpy as np
 import cv2
 import imutils
-import statistics
 
 from skimage import measure
 from voccultation.data_structures.data_containers import DriftTrackRect
 
-def detect_bold_tracks(gray : np.ndarray, 
+def detect_bold_tracks(gray : np.ndarray,
                        num_tracks : int = 4,
                        smooth_size : int = 11,
                        blur_size : int = 35,
-                       threshold_k : float = 1.1) -> List[DriftTrackRect]:
+                       threshold_k : float = 1.1) -> list[DriftTrackRect]:
     """
     Detect bold tracks in the input image.
 
@@ -37,7 +43,7 @@ def detect_bold_tracks(gray : np.ndarray,
         threshold_k (float, optional): Threshold value for blob detection. Defaults to 1.1.
 
     Returns:
-        List[DriftTrackRect]: List of detected tracks.
+        list[DriftTrackRect]: List of detected tracks.
     """
     if blur_size % 2 == 0:
         blur_size += 1
@@ -103,15 +109,15 @@ def detect_bold_tracks(gray : np.ndarray,
 
     return tracks
 
-def _clear_overlapped(tracks : List[DriftTrackRect]) -> List[DriftTrackRect]:
+def _clear_overlapped(tracks : list[DriftTrackRect]) -> list[DriftTrackRect]:
     """
     Remove overlapped tracks from the input list.
 
     Parameters:
-        tracks (List[DriftTrackRect]): Input list of tracks.
+        tracks (list[DriftTrackRect]): Input list of tracks.
 
     Returns:
-        List[DriftTrackRect]: Filtered list of non-overlapped tracks.
+        list[DriftTrackRect]: Filtered list of non-overlapped tracks.
     """
     not_overlapped = []
     for ind1, track1 in enumerate(tracks):
@@ -124,16 +130,16 @@ def _clear_overlapped(tracks : List[DriftTrackRect]) -> List[DriftTrackRect]:
             not_overlapped.append(track1)
     return not_overlapped
 
-def _clear_bad_size(tracks : List[DriftTrackRect], kappa : float) -> List[DriftTrackRect]:
+def _clear_bad_size(tracks : list[DriftTrackRect], kappa : float) -> list[DriftTrackRect]:
     """
     Remove tracks with sizes outside the specified range from the input list.
 
     Parameters:
-        tracks (List[DriftTrackRect]): Input list of tracks.
+        tracks (list[DriftTrackRect]): Input list of tracks.
         kappa (float): Standard deviation multiplier for size filtering.
 
     Returns:
-        List[DriftTrackRect]: Filtered list of tracks within the specified size range.
+        list[DriftTrackRect]: Filtered list of tracks within the specified size range.
     """
     widths = []
     heights = []
@@ -154,15 +160,15 @@ def _clear_bad_size(tracks : List[DriftTrackRect], kappa : float) -> List[DriftT
             goods.append(track)
     return goods
 
-def _correlate_tracks(tracks : List[DriftTrackRect]) -> List[DriftTrackRect]:
+def _correlate_tracks(tracks : list[DriftTrackRect]) -> list[DriftTrackRect]:
     """
     Align input tracks to a common size.
 
     Parameters:
-        tracks (List[DriftTrackRect]): Input list of tracks.
+        tracks (list[DriftTrackRect]): Input list of tracks.
 
     Returns:
-        List[DriftTrackRect]: Aligned list of tracks.
+        list[DriftTrackRect]: Aligned list of tracks.
     """
     maxw = 0
     maxh = 0
@@ -186,17 +192,17 @@ def _correlate_tracks(tracks : List[DriftTrackRect]) -> List[DriftTrackRect]:
 
 def detect_reference_tracks(gray : np.ndarray,
                             count : int,
-                            kappas : List[float]) -> List[DriftTrackRect]:
+                            kappas : list[float]) -> list[DriftTrackRect]:
     """
     Detect reference tracks in the input image.
 
     Parameters:
         gray (np.ndarray): Input grayscale image.
         count (int): Number of tracks to detect.
-        kappas (List[float], optional): List of standard deviation multipliers for size filtering. Defaults to None.
+        kappas (list[float], optional): List of standard deviation multipliers for size filtering. Defaults to None.
 
     Returns:
-        List[DriftTrackRect]: List of detected reference tracks.
+        list[DriftTrackRect]: List of detected reference tracks.
     """
     tracks = detect_bold_tracks(gray, count)
     tracks = _clear_overlapped(tracks)

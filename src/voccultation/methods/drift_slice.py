@@ -12,6 +12,12 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 #
 
+"""Track slicing utilities for extracting brightness profiles along drift tracks.
+
+Includes functions to build normals, perform bilinear interpolation, generate slices,
+and convert slices into profiles.
+"""
+
 from typing import Tuple
 import numpy as np
 import math
@@ -132,12 +138,12 @@ def _make_slice(track : np.ndarray,
     """
     y,x = position
     ty,tx = direction
-    slice = np.zeros((2*half_w+1,))
+    single_slice = np.zeros((2*half_w+1,))
     for i in range(2*half_w+1):
         s = i - half_w + offset
         py, px = y+ty*s, x+tx*s
-        slice[i] = getpixel(track, y=py, x=px)
-    return slice
+        single_slice[i] = getpixel(track, y=py, x=px)
+    return single_slice
 
 def slice_track(track_image : np.ndarray,
                 track_path : DriftTrackPath,
@@ -155,13 +161,17 @@ def slice_track(track_image : np.ndarray,
     Returns:
         DriftSlice: Slice of the track
     """
+    assert track_path.normals is not None
     L = track_path.length
-    slices = np.zeros((L,2*track_path.half_w+1))
+    slices : np.ndarray = np.zeros((L, 2*track_path.half_w+1))
     shift = np.array([margin, margin])
     for i in range(L):
         point = track_path.points[i,:] + shift
         normal = track_path.normals[i,:]
-        track_slice = _make_slice(track_image, point, normal, track_path.half_w, offset)
+        track_slice = _make_slice(track_image,
+                                  (point[0], point[1]),
+                                  (normal[0], normal[1]),
+                                  track_path.half_w, offset)
         slices[i,:] = track_slice
     return DriftSlice(slices)
 
@@ -176,15 +186,15 @@ def slices_to_profile(slices : DriftSlice, used_half_w : int | None) -> DriftPro
         DriftProfile: Profile of the track
     """
     mask = slices.mask
-    slice = slices.slices
+    used_slices = slices.slices
     if used_half_w is not None:
         w = 2*used_half_w+1
         pad = (slices.width - w)//2
         mask = mask[:,pad:pad+w]
-        slice = slice[:,pad:pad+w]
+        used_slices = used_slices[:,pad:pad+w]
 
     weight = np.sum(mask, axis=1) / slices.width
-    value = np.sum(slice, axis=1)
+    value = np.sum(used_slices, axis=1)
     profile = value / weight
     profile[np.where(np.isnan(profile))] = 0
     return DriftProfile(profile, None)

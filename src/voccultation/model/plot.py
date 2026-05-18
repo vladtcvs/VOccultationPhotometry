@@ -12,14 +12,19 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 #
 
-import numpy as np
-from typing import List
+"""Plotting utilities for converting matplotlib figures to numpy arrays.
+
+Provides plot_to_numpy() to render line plots with grid and return them as
+RGB image arrays for display within the application.
+"""
+
 from io import BytesIO
+import numpy as np
 
 import matplotlib.pyplot as plt
 
 def plot_to_numpy(xrange : np.ndarray,
-                  datas : List[np.ndarray],
+                  datas : list[np.ndarray],
                   width=800,
                   height=600,
                   dpi=100) -> np.ndarray:
@@ -28,7 +33,7 @@ def plot_to_numpy(xrange : np.ndarray,
 
     Parameters:
     xrange : np.ndarray - x values
-    datas: List[np.ndarray] - y values
+    datas: list[np.ndarray] - y values
     width: plot width in pixels
     height: plot height in pixels
     dpi: dots per inch

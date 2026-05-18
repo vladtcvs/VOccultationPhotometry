@@ -12,6 +12,13 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 #
 
+"""Main application UI module.
+
+Defines the DriftWindow class which hosts the notebook with DetectTracksPanel,
+ReferenceTrackPanel, and OccultationTrackPanel, along with menu handling,
+image loading, and about dialog.
+"""
+
 import wx
 import wx.adv
 import numpy as np
@@ -25,25 +32,29 @@ from voccultation.ui.occultation_track_panel import OccultationTrackPanel
 VERSION="1.3"
 
 class DriftWindow(wx.Frame):
+    """
+    Main application window containing the notebook with detection,
+    reference, and occultation track panels.
+    """
     def __init__(self, title : str, context : DriftContext):
-        wx.Frame.__init__(self, None, title=title, size=(1200,800))
+        wx.Frame.__init__(self, None, title=title, size=wx.Size(1200,800))
         self.context = context
-        self.Bind(wx.EVT_CLOSE, self.OnClose)
-        menuBar = wx.MenuBar()
+        self.Bind(wx.EVT_CLOSE, self.on_close)
+        menu_bar = wx.MenuBar()
 
-        fileMenu = wx.Menu()
-        m_open = fileMenu.Append(wx.ID_OPEN, "Open\tCtrl-O", "Open tracks image")
-        m_exit = fileMenu.Append(wx.ID_EXIT, "Exit\tCtrl-Q", "Close window and exit program")
-        self.Bind(wx.EVT_MENU, self.OnOpenImage, m_open)
-        self.Bind(wx.EVT_MENU, self.OnClose, m_exit)
-        menuBar.Append(fileMenu, "&File")
+        file_menu = wx.Menu()
+        m_open = file_menu.Append(wx.ID_OPEN, "Open\tCtrl-O", "Open tracks image")
+        m_exit = file_menu.Append(wx.ID_EXIT, "Exit\tCtrl-Q", "Close window and exit program")
+        self.Bind(wx.EVT_MENU, self.on_open_image, m_open)
+        self.Bind(wx.EVT_MENU, self.on_close, m_exit)
+        menu_bar.Append(file_menu, "&File")
 
-        helpMenu = wx.Menu()
-        m_about = helpMenu.Append(wx.ID_ABOUT, "About", "About")
-        self.Bind(wx.EVT_MENU, self.OnAbout, m_about)
-        menuBar.Append(helpMenu, "&Help")
+        help_menu = wx.Menu()
+        m_about = help_menu.Append(wx.ID_ABOUT, "About", "About")
+        self.Bind(wx.EVT_MENU, self.on_about, m_about)
+        menu_bar.Append(help_menu, "&Help")
 
-        self.SetMenuBar(menuBar)
+        self.SetMenuBar(menu_bar)
 
         statusbar = wx.StatusBar(self)
         self.SetStatusBar(statusbar)
@@ -52,16 +63,16 @@ class DriftWindow(wx.Frame):
         panel = wx.Panel(self)
         self.notebook = wx.Notebook(panel)
 
-        self.detectTracksPanel = DetectTracksPanel(self.notebook, self.context, self.status)
-        self.notebook.AddPage(self.detectTracksPanel, "Detect tracks")
+        self.detect_tracks_panel = DetectTracksPanel(self.notebook, self.context, self.status)
+        self.notebook.AddPage(self.detect_tracks_panel, "Detect tracks")
 
-        self.referenceTrackPanel = ReferenceTrackPanel(self.notebook, self.context)
-        self.notebook.AddPage(self.referenceTrackPanel, "Reference track")
+        self.reference_track_panel = ReferenceTrackPanel(self.notebook, self.context)
+        self.notebook.AddPage(self.reference_track_panel, "Reference track")
 
-        self.occultationTrackPanel = OccultationTrackPanel(self.notebook, self.context)
-        self.notebook.AddPage(self.occultationTrackPanel, "Occultation track")
+        self.occultation_track_panel = OccultationTrackPanel(self.notebook, self.context)
+        self.notebook.AddPage(self.occultation_track_panel, "Occultation track")
 
-        self.notebook.Bind(wx.EVT_NOTEBOOK_PAGE_CHANGED, self.NotebookChanged)
+        self.notebook.Bind(wx.EVT_NOTEBOOK_PAGE_CHANGED, self.on_notebook_changed)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(self.notebook, 1, wx.ALL|wx.EXPAND, 5)
@@ -69,39 +80,63 @@ class DriftWindow(wx.Frame):
 
         self.Layout()
 
-    def NotebookChanged(self, event):
+    def on_notebook_changed(self, _event):
+        """
+        Handle notebook page change events.
+
+        Args:
+            _event: The notebook page changed event.
+        """
         page = self.notebook.GetSelection()
         if page == 2:
-            self.occultationTrackPanel.AnalyzeOccultation(None)
+            self.occultation_track_panel.on_analyze_occultation(None)
         if page != 0:
             self.status.SetLabel("x:N/A y:N/A")
 
-    def OnAbout(self, event):
-        aboutInfo = wx.adv.AboutDialogInfo()
-        aboutInfo.SetName("VOccultation")
-        aboutInfo.SetVersion(f"Version: {VERSION}")
-        aboutInfo.SetDescription("Asteroid occultation processing")
-        aboutInfo.SetCopyright("Vladislav Tsendrovskii(C) 2026")
-        aboutInfo.SetLicense("GNU GPL v3")
-        aboutInfo.SetWebSite("https://github.com/vladtcvs/VOccultation")
-        wx.adv.AboutBox(aboutInfo)
+    def on_about(self, _event):
+        """
+        Show the about dialog.
 
-    def OnOpenImage(self, event):
+        Args:
+            _event: The menu event.
+        """
+        about_info = wx.adv.AboutDialogInfo()
+        about_info.SetName("VOccultation")
+        about_info.SetVersion(f"Version: {VERSION}")
+        about_info.SetDescription("Asteroid occultation processing")
+        about_info.SetCopyright("Vladislav Tsendrovskii(C) 2026")
+        about_info.SetLicense("GNU GPL v3")
+        about_info.SetWebSite("https://github.com/vladtcvs/VOccultation")
+        wx.adv.AboutBox(about_info)
+
+    def on_open_image(self, _event):
+        """
+        Handle open image menu command.
+
+        Args:
+            _event: The menu event.
+        """
         with wx.FileDialog(self,
                            "Open track file",
                            wildcard="Image (*.png;*.jpg)|*.png;*.jpg",
-                           style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST) as fileDialog:
+                           style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST) as file_dialog:
 
-            if fileDialog.ShowModal() == wx.ID_CANCEL:
+            if file_dialog.ShowModal() == wx.ID_CANCEL:
                 return
 
-            pathname = fileDialog.GetPath()
+            pathname = file_dialog.GetPath()
             try:
                 gray = np.array(Image.open(pathname).convert('L'))
                 self.context.set_image(gray)
-                self.detectTracksPanel.track_selector.clear()
+                self.detect_tracks_panel.track_selector.clear()
             except IOError:
                 wx.LogError("Cannot open file '%s'." % pathname)
 
-    def OnClose(self, event):
+    def on_close(self, _event):
+        """
+        Handle window close event.
+
+        Args:
+            event: The close event.
+        """
         self.Destroy()
